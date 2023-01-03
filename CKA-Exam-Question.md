@@ -255,6 +255,7 @@ root@cka-master:~# kubectl drain cka-master --delete-emptydir-data --ignore-daem
 安装指定版本的kubeadm
 ```bash
 root@cka-master:~# apt-mark unhold kubeadm
+root@cka-master:~# apt update
 root@cka-master:~# apt install kubeadm=1.25.5-00 -y
 Reading package lists... Done
 Setting up kubeadm (1.25.5-00)
