@@ -216,7 +216,7 @@ You are also expected to upgrade kubelete and kubectl on the master node.
 
 Q4 中文题目：
 
-现有的 Kubernetes 集权正在运行的版本是 1.25.5，仅将主节点上的所有 kubernetes 控制面板和组件升级到版本 1.26.0，请勿升级etcd数据库， 另外，在主节点上升级 kubelet 和 kubectl
+现有的 Kubernetes 集群正在运行的版本是 1.25.5，仅将主节点上的所有 kubernetes 控制面板和组件升级到版本 1.26.0，请勿升级etcd数据库， 另外，在主节点上升级 kubelet 和 kubectl
 
 ---
 
