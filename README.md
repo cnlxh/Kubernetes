@@ -17,7 +17,7 @@
 
 |CPU|内存|SSD硬盘|
 |-|-|-|
-|4核心以上|8G以上|200G空闲|
+|4核心以上|8G以上，推荐16G|200G空闲|
 
 # 仓库介绍
 
@@ -70,9 +70,9 @@
         ```bash
         root@cka-master:~# kubectl get nodes
         NAME          STATUS   ROLES           AGE     VERSION
-        cka-master    Ready    control-plane   7d17h   v1.25.4
-        cka-worker1   Ready    worker          7d17h   v1.25.4
-        cka-worker2   Ready    worker          7d17h   v1.25.4
+        cka-master    Ready    control-plane   7d17h   v1.26.0
+        cka-worker1   Ready    worker          7d17h   v1.26.0
+        cka-worker2   Ready    worker          7d17h   v1.26.0
         ```
 
     2. 执行脚本来部署考试环境
