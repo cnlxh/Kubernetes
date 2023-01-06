@@ -131,23 +131,23 @@ function node_maintenance {
 function upgrade {
   echo '集群升级题目：正在判定集群是否升级成功' 
   echo
-  if kubectl get nodes | grep cka-master | grep -q 1.25.5;then
+  if kubectl get nodes | grep cka-master | grep -q 1.26.0;then
     score=$(expr $score + 2 )
-    pass && echo 'cka-master已升级到1.25.5'
+    pass && echo 'cka-master已升级到1.26.0'
   else
-    fail && echo 'CKA-Master没有成功升级到1.25.5'
+    fail && echo 'CKA-Master没有成功升级到1.26.0'
   fi  
-  if kubectl version 2> /dev/null | grep -q v1.25.5 &> /dev/null &> /dev/null;then
+  if kubectl version 2> /dev/null | grep -q v1.26.0 &> /dev/null &> /dev/null;then
     score=$(expr $score + 2 )
-    pass && echo 'kubectl已升级到1.25.5'
+    pass && echo 'kubectl已升级到1.26.0'
   else
-    fail && echo 'kubectl没有成功升级到1.25.5'
+    fail && echo 'kubectl没有成功升级到1.26.0'
   fi  
-  if kubelet --version | grep -q v1.25.5 &> /dev/null;then
+  if kubelet --version | grep -q v1.26.0 &> /dev/null;then
     score=$(expr $score + 2 )
-    pass && echo 'kubelet已升级到1.25.5'
+    pass && echo 'kubelet已升级到1.26.0'
   else
-    fail && echo 'kubelet没有成功升级到1.25.5'
+    fail && echo 'kubelet没有成功升级到1.26.0'
   fi  
   echo
   echo  
