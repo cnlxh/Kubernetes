@@ -287,13 +287,13 @@ root@cka-master:~# kubeadm upgrade apply v1.26.0 --etcd-upgrade=false
 升级完成后，把kubelet、kubectl升级到指定版本
 
 ```bash
-root@cka-master:~# apt-mark unhold kubeadm
+root@cka-master:~# apt-mark unhold kubelet
 root@cka-master:~# apt-mark unhold kubectl
 root@cka-master:~# apt install kubelet=1.26.0-00 kubectl=1.26.0-00 -y
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
-root@cka-master:~# apt-mark hold kubeadm
+root@cka-master:~# apt-mark hold kubelet
 root@cka-master:~# apt-mark hold kubectl
 ```
 重启kuelet服务，并查询状态
