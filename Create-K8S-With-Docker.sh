@@ -36,6 +36,7 @@ case $input in
 yes)
   echo
 	echo Now deploy k8s cluster on three node
+  echo
 ;;
 no)
 	echo Please correct it && exit 1
@@ -96,7 +97,7 @@ cka-master ansible_user=root ansible_password=1
 cka-worker1 ansible_user=root ansible_password=1
 cka-worker2 ansible_user=root ansible_password=1
 EOF
-echo
+
 cat > create-k8s.yaml <<'EOF'
 ---
 - name: Configure Kubernetes
