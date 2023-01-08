@@ -263,7 +263,7 @@ function highcpu {
 }
 
 function fixnode {
-    echo 'Preparing cka-worker1 state'
+    echo 'Preparing cka-worker1 state into NotReady and SchedulingDisabled'
     while `kubectl get pod -A | grep -qi ContainerCreating`;do
       sleep 1s
     done
