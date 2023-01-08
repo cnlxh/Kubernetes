@@ -25,11 +25,11 @@ echo "##########################################################################
 #         sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 #         sudo systemctl restart sshd
 #
-#    4. if any step fail, please restore clean system snapshot and run script again
-#
-#    5. this tools will only install kubernetes v1.25.5 for CKA Exam upgrade, if you want other version, please modify kubeadm kubelet kubectl version in script
+#    4. this tools will only install kubernetes v1.25.5 for CKA Exam upgrade, if you want other version, please modify kubeadm kubelet kubectl version in script
 #
 ######################################################################################################"
+echo
+echo -ne "\033[4;96m if any step fail, please restore clean system snapshot and run script again \033[0m\t"
 echo
 echo
 echo -n Have you done the above? yes or no: 
