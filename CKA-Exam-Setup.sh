@@ -59,7 +59,7 @@ function backup {
     --cert=/etc/kubernetes/pki/etcd/server.crt \
     --key=/etc/kubernetes/pki/etcd/server.key \
     snapshot save /srv/etcd_exam_backup.db &> /dev/null 
-    kubectl delete namespace etcd_exam_backup &> /dev/null 
+    kubectl delete namespace cka-etcd-backup-check &> /dev/null 
 }
 
 function networkpolicy {
