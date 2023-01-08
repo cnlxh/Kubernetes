@@ -298,6 +298,16 @@ cat > create-k8s.yaml <<'EOF'
         line: '  criSocket: unix:///run/cri-dockerd.sock'
         state: present
       when: "'master' in group_names"      
+    - name: restart docker cri-docker kubelet service
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: {{ item }}
+        enabled: yes
+      loop:
+        - docker
+        - cri-docker
+        - kubelet            
     - name: Deploy kubernetes on Master node
       shell: kubeadm init --config kubeadm.yaml | tee /root/installdetails.log
       when: "'master' in group_names"
