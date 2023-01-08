@@ -302,7 +302,7 @@ cat > create-k8s.yaml <<'EOF'
       systemd:
         state: restarted
         daemon_reload: yes
-        name: {{ item }}
+        name: "{{ item }}"
         enabled: yes
       loop:
         - docker
