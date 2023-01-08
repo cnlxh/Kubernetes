@@ -68,10 +68,10 @@ deb https://mirror.nju.edu.cn/ubuntu focal-security multiverse
 EOF
 
 echo 'Install utility tool on cka-master'
-apt update && apt install sshpass wget bash-completion ansible -y &> /dev/null
-
+apt update &> /dev/null 
+apt install sshpass wget bash-completion ansible -y &> /dev/null
 sed -i 's/^#host_key_checking = False/host_key_checking = False/' /etc/ansible/ansible.cfg
-
+echo
 echo 'Create and copy ssh key to workers'
 ls /root/.ssh/*.pub &> /dev/null
 case $? in
@@ -95,9 +95,8 @@ cka-master ansible_user=root ansible_password=1
 [worker]
 cka-worker1 ansible_user=root ansible_password=1
 cka-worker2 ansible_user=root ansible_password=1
-
 EOF
-
+echo
 cat > create-k8s.yaml <<'EOF'
 ---
 - name: Configure Kubernetes
