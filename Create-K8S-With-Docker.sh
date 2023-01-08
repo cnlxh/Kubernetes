@@ -35,13 +35,13 @@ read input
 case $input in
 yes)
   echo
-	echo now starting deploy
+	echo Now deploy k8s cluster on three node
 ;;
 no)
-	echo please correct it && exit 1
+	echo Please correct it && exit 1
 ;;
 *)
-	echo please input yes or no
+	echo Please input yes or no
   exit 1
 ;;
 esac
@@ -67,24 +67,27 @@ deb https://mirror.nju.edu.cn/ubuntu focal-security universe
 deb https://mirror.nju.edu.cn/ubuntu focal-security multiverse
 EOF
 
-apt update && apt install sshpass wget bash-completion ansible -y
+echo 'Install utility tool on cka-master'
+apt update && apt install sshpass wget bash-completion ansible -y &> /dev/null
+
 sed -i 's/^#host_key_checking = False/host_key_checking = False/' /etc/ansible/ansible.cfg
 
-ls /root/.ssh/*.pub
+echo 'Create and copy ssh key to workers'
+ls /root/.ssh/*.pub &> /dev/null
 case $? in
 0)
 	sleep 1
 ;;
 *)
-	ssh-keygen -t rsa -f /root/.ssh/id_rsa -N ''
+	ssh-keygen -t rsa -f /root/.ssh/id_rsa -N '' &> /dev/null
 ;;
 esac
 
-sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-master
+sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-master &> /dev/null
 
-sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-worker1
+sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-worker1 &> /dev/null
 
-sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-worker2
+sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-worker2 &> /dev/null
 
 cat > /etc/ansible/hosts <<EOF
 [master]
