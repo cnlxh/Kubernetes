@@ -349,6 +349,7 @@ cp /etc/ansible/ansible.cfg /root/ansible.cfg
 
 sed -i '/^# command_warnings.*/a\command_warnings = False' /root/ansible.cfg
 
+echo
 echo 'Deploy K8S Cluster now'
 echo
 ansible-playbook create-k8s.yaml
