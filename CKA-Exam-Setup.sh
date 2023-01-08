@@ -372,6 +372,6 @@ fi
 
 echo
 echo
-echo "Please don't poweroff or disconnect from internet quickly, may be container image is still in downloading now."
+echo -ne "\033[4;96m Please don't poweroff or disconnect from internet quickly, may be container image is still in downloading now \033[0m\t"
 echo
 echo
