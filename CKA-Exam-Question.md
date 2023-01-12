@@ -295,6 +295,7 @@ Building dependency tree
 Reading state information... Done
 root@cka-master:~# apt-mark hold kubelet
 root@cka-master:~# apt-mark hold kubectl
+root@cka-master:~# apt-mark hold kubeadm
 ```
 重启kuelet服务，并查询状态
 ```bash
