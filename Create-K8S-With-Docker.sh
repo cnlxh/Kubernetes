@@ -25,7 +25,7 @@ echo "##########################################################################
 #         sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 #         sudo systemctl restart sshd
 #
-#    4. this tools will only install kubernetes v1.25.5 for CKA Exam upgrade, if you want other version, please modify kubeadm kubelet kubectl version in script
+#    4. this tools will only install kubernetes v1.26.0 for CKA Exam upgrade, if you want other version, please modify kubeadm kubelet kubectl version in script
 #
 ######################################################################################################"
 echo
@@ -253,9 +253,9 @@ cat > create-k8s.yaml <<'EOF'
     - name: install kubeadm kubectl kubelet
       package:
         name:
-          - kubeadm=1.25.5-00
-          - kubelet=1.25.5-00
-          - kubectl=1.25.5-00
+          - kubeadm=1.26.0-00
+          - kubelet=1.26.0-00
+          - kubectl=1.26.0-00
           - sshpass
         state: present
     - name: clean apt lock
