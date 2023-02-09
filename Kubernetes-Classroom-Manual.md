@@ -890,7 +890,7 @@ kubectl delete pod --all
 
 ## Replica Set
 
-使用cnlxh/gb-frontend:v3镜像创建具有3个pod的RS,并分配合适的标签
+使用nginx镜像创建具有3个pod的RS,并分配合适的标签
 
 ```bash
 cat > rs.yml <<EOF
