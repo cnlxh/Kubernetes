@@ -271,12 +271,15 @@ cat > create-k8s.yaml <<'EOF'
       shell: kubeadm config print init-defaults > kubeadm.yaml
       when: "'master' in group_names"
     - name: modify api server address
-      lineinfile:
-        path: kubeadm.yaml
-        regexp: '.*advert.*'
-        line: '  advertiseAddress: 192.168.30.130'
-        state: present
+      shell: sed -i '/.*advertiseAddress.*/d' kubeadm.yaml
       when: "'master' in group_names"
+    # - name: modify api server address
+    #   lineinfile:
+    #     path: kubeadm.yaml
+    #     regexp: '.*advert.*'
+    #     line: '  advertiseAddress: 192.168.30.130'
+    #     state: present
+    #   when: "'master' in group_names"
     - name: modify cluster name
       lineinfile:
         path: kubeadm.yaml
