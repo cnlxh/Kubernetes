@@ -1072,8 +1072,29 @@ root@cka-worker1:~# systemctl status docker
 ```
 修复两个服务状态，记得enable
 ```bash
-root@cka-master:~# ssh root@CKA-Worker1
-root@cka-master:~# systemctl start docker 
-root@cka-master:~# systemctl start kubelet 
-root@cka-master:~# systemctl enable kubelet docker
+root@cka-worker1:~# ssh root@CKA-Worker1
+root@cka-worker1:~# systemctl start docker 
+root@cka-worker1:~# systemctl start kubelet 
+root@cka-worker1:~# systemctl enable kubelet docker
 ```
+**另外请注意，有同学反馈考试时有遇到runtime不是docker，而是containerd的情况，所以考试时，灵活一些，看看到底是docker还是containerd，具体可以docker images看看是否有考试过程中的镜像，或者以下方式查询：**
+
+```bash
+root@cka-master:~# kubectl describe nodes cka-master
+root@cka-master:~# kubectl describe nodes cka-master | grep -A 10 'System Info'
+System Info:
+  Machine ID:                 f7a62926421b4acd8fc846913bae6e15
+  System UUID:                84dc4d56-3746-44eb-dc35-ca3a14c0c590
+  Boot ID:                    8a666f57-48a4-49a5-8c35-f808d758b4d7
+  Kernel Version:             5.4.0-125-generic
+  OS Image:                   Ubuntu 20.04.5 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  docker://20.10.22
+  Kubelet Version:            v1.25.5
+  Kube-Proxy Version:         v1.25.5
+```
+
+Container Runtime Version:  docker://20.10.22
+
+可以看出是docker的20.10.22版本，而非containerd，当然，是哪个节点不正常，就去describe哪个节点
