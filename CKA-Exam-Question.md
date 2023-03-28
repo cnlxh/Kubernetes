@@ -1080,21 +1080,20 @@ root@cka-worker1:~# systemctl enable kubelet docker
 **另外请注意，有同学反馈考试时有遇到runtime不是docker，而是containerd的情况，所以考试时，灵活一些，看看到底是docker还是containerd，具体可以docker images看看是否有考试过程中的镜像，或者以下方式查询：**
 
 ```bash
-root@cka-master:~# kubectl describe nodes cka-master
-root@cka-master:~# kubectl describe nodes cka-master | grep -A 10 'System Info'
+root@cka-master:~# kubectl describe nodes cka-worker1 | grep -A 10 'System Info'
 System Info:
-  Machine ID:                 f7a62926421b4acd8fc846913bae6e15
-  System UUID:                84dc4d56-3746-44eb-dc35-ca3a14c0c590
-  Boot ID:                    8a666f57-48a4-49a5-8c35-f808d758b4d7
+  Machine ID:                 77b031532486421d9571f82739654f48
+  System UUID:                2dff4d56-861e-193b-d91f-a975eb9f0d12
+  Boot ID:                    728e4c89-791e-422d-9b1a-bca1c1c4f345
   Kernel Version:             5.4.0-125-generic
   OS Image:                   Ubuntu 20.04.5 LTS
   Operating System:           linux
   Architecture:               amd64
-  Container Runtime Version:  docker://20.10.22
-  Kubelet Version:            v1.25.5
-  Kube-Proxy Version:         v1.25.5
+  Container Runtime Version:  docker://23.0.1
+  Kubelet Version:            v1.26.0
+  Kube-Proxy Version:         v1.26.0
 ```
 
-Container Runtime Version:  docker://20.10.22
+Container Runtime Version:  docker://23.0.1
 
-可以看出是docker的20.10.22版本，而非containerd，当然，本题目中具体是哪个节点不正常，就去describe哪个节点
+可以看出是docker的23.0.1版本，而非containerd，当然，本题目中具体是哪个节点不正常，就去describe哪个节点
