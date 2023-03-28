@@ -1072,7 +1072,7 @@ root@cka-worker1:~# systemctl status docker
 ```
 修复两个服务状态，记得enable
 ```bash
-root@cka-worker1:~# ssh root@CKA-Worker1
+root@cka-master:~# ssh root@cka-worker1
 root@cka-worker1:~# systemctl start docker 
 root@cka-worker1:~# systemctl start kubelet 
 root@cka-worker1:~# systemctl enable kubelet docker
@@ -1097,4 +1097,4 @@ System Info:
 
 Container Runtime Version:  docker://20.10.22
 
-可以看出是docker的20.10.22版本，而非containerd，当然，是哪个节点不正常，就去describe哪个节点
+可以看出是docker的20.10.22版本，而非containerd，当然，本题目中具体是哪个节点不正常，就去describe哪个节点
