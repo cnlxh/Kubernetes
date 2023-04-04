@@ -70,9 +70,9 @@
         ```bash
         root@cka-master:~# kubectl get nodes
         NAME          STATUS   ROLES           AGE     VERSION
-        cka-master    Ready    control-plane   7d17h   v1.26.0
-        cka-worker1   Ready    worker          7d17h   v1.26.0
-        cka-worker2   Ready    worker          7d17h   v1.26.0
+        cka-master    Ready    control-plane   7d17h   v1.26.2
+        cka-worker1   Ready    worker          7d17h   v1.26.2
+        cka-worker2   Ready    worker          7d17h   v1.26.2
         ```
 
     2. 执行脚本来部署练习环境
