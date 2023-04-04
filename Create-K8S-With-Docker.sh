@@ -253,9 +253,9 @@ cat > create-k8s.yaml <<'EOF'
     - name: install kubeadm kubectl kubelet
       package:
         name:
-          - kubeadm=1.26.0-00
-          - kubelet=1.26.0-00
-          - kubectl=1.26.0-00
+          - kubeadm=1.26.2-00
+          - kubelet=1.26.2-00
+          - kubectl=1.26.2-00
           - sshpass
         state: present
     - name: clean apt lock
