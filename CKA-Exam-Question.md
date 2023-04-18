@@ -94,9 +94,9 @@ systemctl restart kubelet.service
 
 root@cka-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-cka-master    Ready                         control-plane   11h   v1.26.2
-cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.26.2
-cka-worker2   Ready                         worker          11h   v1.26.2
+cka-master    Ready                         control-plane   11h   v1.26.4
+cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.26.4
+cka-worker2   Ready                         worker          11h   v1.26.4
 ```
 # Q2: RBAC
 
@@ -197,9 +197,9 @@ root@cka-master:~# kubectl cordon cka-master
 
 root@cka-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-cka-master    Ready,SchedulingDisabled      control-plane   11h   v1.26.2
-cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.26.2
-cka-worker2   Ready                         worker          11h   v1.26.2
+cka-master    Ready,SchedulingDisabled      control-plane   11h   v1.26.4
+cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.26.4
+cka-worker2   Ready                         worker          11h   v1.26.4
 ```
 将现有工作负载驱赶到其他节点
 ```bash
@@ -208,7 +208,7 @@ root@cka-master:~# kubectl drain cka-master --delete-emptydir-data --ignore-daem
 
 # Q4: Upgrading kubeadm clusters
 
-Given an existing kubernetes cluster running version 1.26.2,upgrade all of the Kubernetes control plane and node components on the master node only to version 1.26.3,Please do not upgrade etcd database.
+Given an existing kubernetes cluster running version 1.26.4,upgrade all of the Kubernetes control plane and node components on the master node only to version 1.27.2,Please do not upgrade etcd database.
 
 You are also expected to upgrade kubelete and kubectl on the master node.
 
@@ -216,7 +216,7 @@ You are also expected to upgrade kubelete and kubectl on the master node.
 
 Q4 中文题目：
 
-现有的 Kubernetes 集群正在运行的版本是 1.26.2，仅将主节点上的所有 kubernetes 控制面板和组件升级到版本 1.26.3，请勿升级etcd数据库， 另外，在主节点上升级 kubelet 和 kubectl
+现有的 Kubernetes 集群正在运行的版本是 1.26.4，仅将主节点上的所有 kubernetes 控制面板和组件升级到版本 1.27.2，请勿升级etcd数据库， 另外，在主节点上升级 kubelet 和 kubectl
 
 ---
 
@@ -230,19 +230,19 @@ root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```bash
 root@cka-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-cka-master    Ready,SchedulingDisabled      control-plane   11h   v1.26.2
-cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.26.2
-cka-worker2   Ready                         worker          11h   v1.26.2
+cka-master    Ready,SchedulingDisabled      control-plane   11h   v1.26.4
+cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.26.4
+cka-worker2   Ready                         worker          11h   v1.26.4
 
 root@cka-master:~# kubelet --version
-Kubernetes v1.26.2
+Kubernetes v1.26.4
 
 root@cka-master:~# kubectl version
-Client Version: version.Info{Major:"1", Minor:"26", GitVersion:"v1.26.2"}
-Server Version: version.Info{Major:"1", Minor:"26", GitVersion:"v1.26.2"}
+Client Version: version.Info{Major:"1", Minor:"26", GitVersion:"v1.26.4"}
+Server Version: version.Info{Major:"1", Minor:"26", GitVersion:"v1.26.4"}
 
 root@cka-master:~# kubeadm version
-kubeadm version: &version.Info{Major:"1", Minor:"26", GitVersion:"v1.26.2"}
+kubeadm version: &version.Info{Major:"1", Minor:"26", GitVersion:"v1.26.4"}
 ```
 禁用新的调度
 ```bash
@@ -256,14 +256,14 @@ root@cka-master:~# kubectl drain cka-master --delete-emptydir-data --ignore-daem
 ```bash
 root@cka-master:~# apt-mark unhold kubeadm
 root@cka-master:~# apt update
-root@cka-master:~# apt install kubeadm=1.26.3-00 -y
+root@cka-master:~# apt install kubeadm=1.27.2-00 -y
 Reading package lists... Done
-Setting up kubeadm (1.26.3-00)
+Setting up kubeadm (1.27.2-00)
 ...
 root@cka-master:~# apt-mark hold kubeadm
 
 root@cka-master:~# kubeadm version
-kubeadm version: &version.Info{Major:"1", Minor:"26", GitVersion:"v1.26.3"}
+kubeadm version: &version.Info{Major:"1", Minor:"27", GitVersion:"v1.27.2"}
 ```
 查询现有可升级的版本
 ```bash
@@ -271,16 +271,16 @@ root@cka-master:~# kubeadm upgrade plan
 ...
 You can now apply the upgrade by executing the following command:
 
-        kubeadm upgrade apply v1.26.3
+        kubeadm upgrade apply v1.27.2
 ```
 完成版本升级，记得指定不升级etcd的参数
 ```bash
 root@cka-master:~# apt-mark unhold kubeadm
-root@cka-master:~# kubeadm upgrade apply v1.26.3 --etcd-upgrade=false
+root@cka-master:~# kubeadm upgrade apply v1.27.2 --etcd-upgrade=false
 ...
 [upgrade] Are you sure you want to proceed? [y/N]: y
 ...
-[upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.26.3". Enjoy!
+[upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.27.2". Enjoy!
 
 [upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
 ```
@@ -289,7 +289,7 @@ root@cka-master:~# kubeadm upgrade apply v1.26.3 --etcd-upgrade=false
 ```bash
 root@cka-master:~# apt-mark unhold kubelet
 root@cka-master:~# apt-mark unhold kubectl
-root@cka-master:~# apt install kubelet=1.26.3-00 kubectl=1.26.3-00 -y
+root@cka-master:~# apt install kubelet=1.27.2-00 kubectl=1.27.2-00 -y
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
@@ -303,7 +303,7 @@ root@cka-master:~# systemctl daemon-reload
 root@cka-master:~# systemctl restart kubelet.service
 root@cka-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-cka-master    Ready,SchedulingDisabled      control-plane   11h   v1.26.3
+cka-master    Ready,SchedulingDisabled      control-plane   11h   v1.27.2
 cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.26.3
 cka-worker2   Ready                         worker          11h   v1.26.3
 ```
@@ -313,7 +313,7 @@ cka-worker2   Ready                         worker          11h   v1.26.3
 root@cka-master:~# kubectl uncordon cka-master
 root@cka-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-cka-master    Ready                         control-plane   19m   v1.26.3
+cka-master    Ready                         control-plane   19m   v1.27.2
 cka-worker1   Ready                         worker          17m   v1.26.3
 cka-worker2   Ready                         worker          16m   v1.26.3
 ```
@@ -618,9 +618,9 @@ kubectl create -f assignpod.yml
 ```bash
 root@cka-master:~# kubectl get nodes --show-labels
 NAME          STATUS     ROLES           AGE   VERSION   LABELS
-cka-master    Ready      control-plane   14h   v1.26.2   ...
-cka-worker1   NotReady   worker          14h   v1.26.2   ...
-cka-worker2   Ready      worker          14h   v1.26.2   disk=spinning
+cka-master    Ready      control-plane   14h   v1.26.4   ...
+cka-worker1   NotReady   worker          14h   v1.26.4   ...
+cka-worker2   Ready      worker          14h   v1.26.4   disk=spinning
 ```
 查询pod是否如期调度
 ```bash
