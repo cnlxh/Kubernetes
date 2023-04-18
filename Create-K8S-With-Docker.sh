@@ -359,7 +359,7 @@ EOF
 
 cp /etc/ansible/ansible.cfg /root/ansible.cfg
 if [ $? -ne 0 ];then
-exit;
+echo please review the output on screen and fix error before re-run && exit;
 fi
 sed -i '/^# command_warnings.*/a\command_warnings = False' /root/ansible.cfg
 if [ $? -ne 0 ];then
