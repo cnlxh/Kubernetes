@@ -74,6 +74,9 @@ echo 'Install utility tool on cka-master'
 apt update &> /dev/null 
 apt install sshpass wget bash-completion ansible -y &> /dev/null
 sed -i 's/^#host_key_checking = False/host_key_checking = False/' /etc/ansible/ansible.cfg
+if [ $? -ne 0 ];then
+exit;
+fi
 echo
 echo 'Create and copy ssh key to workers'
 ls /root/.ssh/*.pub &> /dev/null
@@ -92,6 +95,10 @@ sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-worker1 &> /dev/nu
 
 sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-worker2 &> /dev/null
 
+if [ $? -ne 0 ];then
+exit;
+fi
+
 cat > /etc/ansible/hosts <<EOF
 [master]
 cka-master ansible_user=root ansible_password=1
@@ -99,7 +106,9 @@ cka-master ansible_user=root ansible_password=1
 cka-worker1 ansible_user=root ansible_password=1
 cka-worker2 ansible_user=root ansible_password=1
 EOF
-
+if [ $? -ne 0 ];then
+exit;
+fi
 cat > create-k8s.yaml <<'EOF'
 ---
 - name: Configure Kubernetes
@@ -253,9 +262,9 @@ cat > create-k8s.yaml <<'EOF'
     - name: install kubeadm kubectl kubelet
       package:
         name:
-          - kubeadm=1.26.2-00
-          - kubelet=1.26.2-00
-          - kubectl=1.26.2-00
+          - kubeadm=1.26.4-00
+          - kubelet=1.26.4-00
+          - kubectl=1.26.4-00
           - sshpass
         state: present
     - name: clean apt lock
@@ -349,14 +358,20 @@ cat > create-k8s.yaml <<'EOF'
 EOF
 
 cp /etc/ansible/ansible.cfg /root/ansible.cfg
-
+if [ $? -ne 0 ];then
+exit;
+fi
 sed -i '/^# command_warnings.*/a\command_warnings = False' /root/ansible.cfg
-
+if [ $? -ne 0 ];then
+exit;
+fi
 echo
 echo 'Deploy K8S Cluster now'
 echo
 ansible-playbook create-k8s.yaml
-
+if [ $? -ne 0 ];then
+exit;
+fi
 rm -rf create-k8s.yaml /root/ansible.cfg /root/kubeadm.yaml /root/Create-K8S-With-Docker.sh /root/installdetails.log
 
 kubectl completion bash > /etc/bash_completion.d/kubectl
