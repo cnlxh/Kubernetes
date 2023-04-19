@@ -160,7 +160,7 @@ dhclient
 推荐的工具下载链接如下，你也可以使用自己熟悉的
 
 ```bash
-https://download.mobatek.net/2232022120824733/MobaXterm_Portable_v22.3.zip
+https://download.mobatek.net/2312023031823706/MobaXterm_Portable_v23.1.zip
 ```
 
 # 设置永久静态IP地址
@@ -171,7 +171,7 @@ https://download.mobatek.net/2232022120824733/MobaXterm_Portable_v22.3.zip
 
 设置静态IP
 
-直接在SSH工具上，全选复制粘贴即可将IP配置完成
+直接在SSH工具上，全选复制粘贴即可将IP配置完成，如果使用SSH工具存在困难，以下任何需要粘贴的部分，可手工在服务器中vim修改具体文件
 
 再次提醒，请注意，三台虚拟机的IP和主机名必须如下：
 
@@ -208,7 +208,7 @@ netplan apply
 
 # 配置OpenSSH-Server
 
-开通root用户的ssh权限以方便我们远程，此为课程所必须，请确保3台虚拟机上都配置好了root的ssh登录，且密码为1，全选复制，然后三台机器上粘贴
+开通root用户的ssh权限以方便我们远程，此为课程所必须，请确保3台虚拟机上都配置好了root的ssh登录，且密码为1，全选复制，然后在三台机器上粘贴
 
 ```bash
 sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
@@ -237,6 +237,18 @@ apt install open-vm-tools -y
 
 ```bash
 apt install vim wget curl bash-completion -y
+```
+
+# 配置集群内部解析
+
+全选复制，然后在三台机器上粘贴，注意不要有遗漏，3台机器都需要配置解析
+
+```bash
+cat >> /etc/hosts <<EOF
+192.168.30.130 cka-master
+192.168.30.131 cka-worker1
+192.168.30.132 cka-worker2
+EOF
 ```
 
 # 制作虚拟机快照
