@@ -282,6 +282,7 @@ if ! kubectl get nodes &> /dev/null;then
   sleep 1
 else
   if kubectl get pod -A | grep -i -E 'error|back|init|creati' &> /dev/null;then
+    echo "please type 'kubectl get pod -A' in new terminal, some pod status is not normal, you can type 'kubectl describe pod' try to fix it. "
     sleep 1
   else
     break
