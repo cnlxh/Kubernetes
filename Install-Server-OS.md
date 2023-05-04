@@ -10,10 +10,10 @@
 
 ISO 下载地址：
 
-从以下链接下载文件：ubuntu-20.04.5-live-server-amd64.iso
+从以下链接下载文件：ubuntu-20.04.6-live-server-amd64.iso
 
 ```textile
-http://mirrors.aliyun.com/ubuntu-releases/20.04.5
+http://mirrors.aliyun.com/ubuntu-releases/20.04.6/ubuntu-20.04.6-live-server-amd64.iso
 ```
 
 VMware Workstation下载地址：
