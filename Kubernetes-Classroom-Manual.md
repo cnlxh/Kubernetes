@@ -577,7 +577,7 @@ kubectl get pod -A
 
 ## 加入Worker节点
 
-这里要注意，Worker节点需要完成以下先决条件才能执行kubeadm join
+加入节点操作需在所有的worker节点完成，这里要注意，Worker节点需要完成以下先决条件才能执行kubeadm join
 
 1. Containerd 部署或CRI-Docker 部署
 2. Swap 分区关闭
@@ -607,13 +607,7 @@ kubeadm join 192.168.30.130:6443 --token m0uywc.81wx2xlrzzfe4he0 \
 --cri-socket=unix:///var/run/cri-dockerd.sock
 ```
 
-加入后执行下面的命令查看节点状态
-
-```bash
-kubectl get nodes
-```
-
-给节点打上角色标签，cka-worker1 cka-worker2打上了worker标签
+在cka-master机器上执行以下内容给节点打上角色标签，cka-worker1 cka-worker2打上了worker标签
 
 ```bash
 kubectl label nodes cka-worker1 cka-worker2 node-role.kubernetes.io/worker=
