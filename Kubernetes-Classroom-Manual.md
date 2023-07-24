@@ -579,7 +579,7 @@ kubectl get pod -A
 
 加入节点操作需在所有的worker节点完成，这里要注意，Worker节点需要完成以下先决条件才能执行kubeadm join
 
-1. Containerd 部署或CRI-Docker 部署
+1. Containerd 部署或Docker、CRI-Docker 部署
 2. Swap 分区关闭
 3. iptables 桥接流量的允许
 4. 安装kubeadm等软件
