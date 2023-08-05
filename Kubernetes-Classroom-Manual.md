@@ -2740,6 +2740,7 @@ kubectl delete -f quota.yml
 ```bash
 kubectl create namespace test
 ```
+在ResourceQuota中，requests.cpu: "1" 就代表1000m，requests.memory后面，如果只是一个数字，没有Mi等单位时，默认使用的是字节单位
 
 ```bash
 cat > nmquota.yml <<EOF
