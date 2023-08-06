@@ -3071,7 +3071,7 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: lixiaohui
+          kubernetes.io/metadata.name: lixiaohui
     ports:
     - protocol: TCP
       port: 80
