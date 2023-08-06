@@ -208,7 +208,7 @@ root@cka-master:~# kubectl drain cka-master --delete-emptydir-data --ignore-daem
 
 # Q4: Upgrading kubeadm clusters
 
-Given an existing kubernetes cluster running version 1.26.4,upgrade all of the Kubernetes control plane and node components on the master node only to version 1.27.2,Please do not upgrade etcd database.
+Given an existing kubernetes cluster running version 1.27.2,upgrade all of the Kubernetes control plane and node components on the master node only to version 1.27.4,Please do not upgrade etcd database.
 
 You are also expected to upgrade kubelete and kubectl on the master node.
 
@@ -238,11 +238,11 @@ root@cka-master:~# kubelet --version
 Kubernetes v1.27.2
 
 root@cka-master:~# kubectl version
-Client Version: version.Info{Major:"1", Minor:"26", GitVersion:"v1.27.2"}
-Server Version: version.Info{Major:"1", Minor:"26", GitVersion:"v1.27.2"}
+Client Version: version.Info{Major:"1", Minor:"27", GitVersion:"v1.27.2"}
+Server Version: version.Info{Major:"1", Minor:"27", GitVersion:"v1.27.2"}
 
 root@cka-master:~# kubeadm version
-kubeadm version: &version.Info{Major:"1", Minor:"26", GitVersion:"v1.27.2"}
+kubeadm version: &version.Info{Major:"1", Minor:"27", GitVersion:"v1.27.2"}
 ```
 禁用新的调度
 ```bash
