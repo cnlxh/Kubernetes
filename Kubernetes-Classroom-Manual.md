@@ -3280,9 +3280,11 @@ category选择Docker，Data Source选择Prometheus可以更好的筛选
 ```bash
 apt list kubeadm -a
 Listing... Done
-kubeadm/kubernetes-xenial,now 1.24.0-00 amd64 [installed]
-kubeadm/kubernetes-xenial 1.23.6-00 amd64
-kubeadm/kubernetes-xenial 1.23.5-00 amd64
+kubeadm/kubernetes-xenial 1.27.3-00 amd64 [upgradable from: 1.27.2-00]
+kubeadm/kubernetes-xenial,now 1.27.2-00 amd64 [installed,upgradable to: 1.27.3-00]
+kubeadm/kubernetes-xenial 1.27.1-00 amd64
+kubeadm/kubernetes-xenial 1.27.0-00 amd64
+kubeadm/kubernetes-xenial 1.26.6-00 amd64
 ```
 
 在上一步可以看到一个可用的列表，假设我们要升级的目标为1.24.0-00的版本
@@ -3293,9 +3295,9 @@ kubeadm/kubernetes-xenial 1.23.5-00 amd64
 kubectl cordon cka-master
 kubectl get nodes
 NAME                    STATUS                     ROLES           AGE     VERSION
-cka-master              Ready,SchedulingDisabled   control-plane   7h38m   v1.24.0
-cka-worker1             Ready                      worker          7h2m    v1.24.0
-cka-worker2             Ready                      worker          7h2m    v1.24.0
+cka-master              Ready,SchedulingDisabled   control-plane   7h38m   v1.27.2
+cka-worker1             Ready                      worker          7h2m    v1.27.2
+cka-worker2             Ready                      worker          7h2m    v1.27.2
 ```
 
 驱逐Master节点上的现有任务
@@ -3316,20 +3318,20 @@ evicting pod default/nginxrstest-4tms8
 
 ```bash
 apt-get update
-apt-get install -y kubelet=1.24.0-00 kubeadm=1.24.0-00 kubectl=1.24.0-00
+apt-get install -y kubelet=1.27.3-00 kubeadm=1.27.3-00 kubectl=1.27.3-00
 ```
 
 查看可升级的列表并升级
 
 ```bash
 kubeadm upgrade plan
-kubeadm upgrade apply v1.24.0  --etcd-upgrade=false
+kubeadm upgrade apply v1.27.3  --etcd-upgrade=false
 
 [upgrade/config] Making sure the configuration is correct:
 [upgrade/config] Reading configuration from the cluster...
 ...
 [upgrade/confirm] Are you sure you want to proceed with the upgrade? [y/N]:  y
-[upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.24.0". Enjoy!
+[upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.27.3". Enjoy!
 [upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
 ```
 
@@ -3340,9 +3342,9 @@ systemctl restart kubelet
 kubectl uncordon cka-master
 kubectl get nodes
 NAME                    STATUS   ROLES           AGE     VERSION
-cka-master              Ready    control-plane   7h48m   v1.24.0
-cka-worker1             Ready    worker          7h12m   v1.24.0
-cka-worker2             Ready    worker          7h12m   v1.24.0
+cka-master              Ready    control-plane   7h48m   v1.27.3
+cka-worker1             Ready    worker          7h12m   v1.27.2
+cka-worker2             Ready    worker          7h12m   v1.27.2
 ```
 
 # Helm 部署实践
