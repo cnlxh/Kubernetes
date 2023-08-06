@@ -3103,7 +3103,7 @@ EOF
 kubectl create -f nptest.yml
 ```
 
-访问没有被网络策略选中的pod，发现成功访问
+从default namespace中访问没有被网络策略选中的pod，发现成功访问
 
 ```bash
 kubectl exec -it pod-default -- wget 172.16.152.74
@@ -3113,11 +3113,40 @@ index.html           100% |********************************|    45  0:00:00 ETA
 'index.html' saved
 ```
 
-访问被网络策略选中的pod，发现无法访问
+从default namespace中访问被网络策略选中的pod，发现无法访问
 
 ```bash
 kubectl exec -it pod-default -- wget 172.16.152.73
 Connecting to 172.16.152.73 (172.16.152.73:80)
+```
+新建一个lixiaohui namespace的pod，测试是否可以访问被隔离的pod，由于网络策略的原因，一定是可以访问的
+
+```bash
+cat > nplixiaohuitest.yml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-lixiaohui-test
+  namespace: lixiaohui
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command:
+      - /bin/sh
+      - -c
+      - "sleep 10m"
+  restartPolicy: OnFailure
+EOF
+kubectl create -f nplixiaohuitest.yml
+```
+
+以下测试中，发现可以正常访问zhangsan namesapce中的pod
+```bash
+kubectl -n lixiaohui exec -it pod-lixiaohui-test -- wget 172.16.152.73
+saving to 'index.html'
+index.html           100% |********************************|    45  0:00:00 ETA
+'index.html' saved
 ```
 
 # 监控与升级
