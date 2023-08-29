@@ -11,7 +11,7 @@
 
 `All question is used to kubernetes-admin@kubernetes context on cluster, please don't forget it before you are to do test`
 
-`You have to do this test first, if not, you might get a zero at score`
+`You have to do this test first in simulated, if not, you might get a zero at score in simulated`
 
 First, create a snapshot of the existing etcd instance running at https://127.0.0.1:2379, saving the snapshot to /srv/etcd-snapshot.db.
 Next, restore an existing, previous snapshot localted at /srv/etcd_exam_backup.db
@@ -33,6 +33,8 @@ Q1 中文题目：
 `所有题都需要切换context 集群，每个题都有切换的命令，做题之前一定要复制它的命令并执行，不然你可能会直接得0分`
 
 `你必须首先做这个题，才能做其他的，不然你可能会直接得0分`
+
+`鉴于很多同学在正式考试中，恢复etcd这道题导致集群挂掉，最后考试挂科，建议如果你的分值预估已经很高，就不要做恢复集群的步骤，以防全盘皆输`
 
 针对etcd实例 https://127.0.0.1:2379 创建一个快照，保存到/srv/etcd-snapshot.db，然后恢复一个已经存在的快照：/srv/etcd_exam_backup.db
 
