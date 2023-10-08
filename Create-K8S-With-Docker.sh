@@ -58,6 +58,7 @@ esac
 cd /root
 
 cat > /etc/apt/sources.list <<EOF
+deb https://download.docker.com/linux/ubuntu focal stable
 deb https://mirror.nju.edu.cn/ubuntu focal main restricted
 deb https://mirror.nju.edu.cn/ubuntu focal-updates main restricted
 deb https://mirror.nju.edu.cn/ubuntu focal universe
@@ -126,15 +127,15 @@ cat > create-k8s.yaml <<'EOF'
       shell: |
         cp /etc/apt/sources.list /etc/apt/sources.list.bak
         sed -i 's/^deb.*archive.ubuntu.com/deb https:\/\/mirrors.nju.edu.cn/' /etc/apt/sources.list
-    - name: Deploy Docker Repository
-      shell: |
-        apt-get -y install apt-transport-https ca-certificates curl software-properties-common gnupg
-        install -m 0755 -d /etc/apt/keyrings
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-        chmod a+r /etc/apt/keyrings/docker.gpg
-        curl -fsSL https://mirror.nju.edu.cn/docker-ce/linux/ubuntu/gpg | apt-key add -
-        add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable"
-        apt-get -y update
+    # - name: Deploy Docker Repository
+    #   shell: |
+    #     apt-get -y install apt-transport-https ca-certificates curl software-properties-common gnupg
+    #     install -m 0755 -d /etc/apt/keyrings
+    #     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    #     chmod a+r /etc/apt/keyrings/docker.gpg
+    #     curl -fsSL https://mirror.nju.edu.cn/docker-ce/linux/ubuntu/gpg | apt-key add -
+    #     add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable"
+    #     apt-get -y update
     - name: clean apt lock
       shell: |
         rm -rf /var/lib/apt/lists/lock
