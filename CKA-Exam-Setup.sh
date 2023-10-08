@@ -193,8 +193,9 @@ function pvc {
     systemctl enable nfs-server nfs-mountd nfs-kernel-server nfs-utils --now &> /dev/null
     exportfs -rav  &> /dev/null
 
-    sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-master apt install nfs-common -y &> /dev/null
-    sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-worker2 apt install nfs-common -y &> /dev/null
+    sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-master apt update && apt install nfs-common -y &> /dev/null
+    sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-worker1 apt update && apt install nfs-common -y &> /dev/null
+    sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-worker2 apt update && apt install nfs-common -y &> /dev/null
     echo 'Preparing nfs external-provisioner'
     git clone https://gitee.com/cnlxh/nfs-subdir-external-provisioner.git  &> /dev/null
     cd nfs-subdir-external-provisioner
