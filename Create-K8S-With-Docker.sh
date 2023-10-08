@@ -126,12 +126,15 @@ cat > create-k8s.yaml <<'EOF'
       shell: |
         cp /etc/apt/sources.list /etc/apt/sources.list.bak
         sed -i 's/^deb.*archive.ubuntu.com/deb https:\/\/mirrors.nju.edu.cn/' /etc/apt/sources.list
-    - name: Deploy Nanjing Edu Docker Repository
+    - name: Deploy Docker Repository
       shell: |
         apt-get update
-        apt-get -y install apt-transport-https ca-certificates curl software-properties-common
+        apt-get -y install apt-transport-https ca-certificates curl software-properties-common gnupg
+        install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
         curl -fsSL https://mirror.nju.edu.cn/docker-ce/linux/ubuntu/gpg | apt-key add -
-        add-apt-repository "deb [arch=amd64] https://mirror.nju.edu.cn/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+        add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable"
         apt-get -y update
     - name: clean apt lock
       shell: |
