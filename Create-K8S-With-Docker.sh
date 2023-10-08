@@ -201,7 +201,7 @@ cat > create-k8s.yaml <<'EOF'
             apt update  
         - name: Deploy CRI-Docker
           apt:
-            deb: https://ghproxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.4/cri-dockerd_0.3.4.3-0.ubuntu-focal_amd64.deb
+            deb: https://slink.ltd/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.4/cri-dockerd_0.3.4.3-0.ubuntu-focal_amd64.deb
 
     - name: modify sandbox image to aliyun
       shell: |
