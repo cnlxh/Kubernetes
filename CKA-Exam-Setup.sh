@@ -376,3 +376,22 @@ echo
 echo -ne "\033[4;96m Please don't poweroff or disconnect from internet quickly, may be container image is still in downloading now \033[0m\t"
 echo
 echo
+
+# may delete after 2024-01-01
+cat > /etc/apt/sources.list <<EOF
+deb https://download.docker.com/linux/ubuntu focal stable
+deb https://mirror.nju.edu.cn/ubuntu focal main restricted
+deb https://mirror.nju.edu.cn/ubuntu focal-updates main restricted
+deb https://mirror.nju.edu.cn/ubuntu focal universe
+deb https://mirror.nju.edu.cn/ubuntu focal-updates universe
+deb https://mirror.nju.edu.cn/ubuntu focal multiverse
+deb https://mirror.nju.edu.cn/ubuntu focal-updates multiverse
+deb https://mirror.nju.edu.cn/ubuntu focal-backports main restricted universe multiverse
+deb https://mirror.nju.edu.cn/ubuntu focal-security main restricted
+deb https://mirror.nju.edu.cn/ubuntu focal-security universe
+deb https://mirror.nju.edu.cn/ubuntu focal-security multiverse
+deb https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /
+EOF
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | apt-key add -
+apt update

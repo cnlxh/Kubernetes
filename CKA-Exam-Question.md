@@ -258,9 +258,9 @@ root@cka-master:~# kubectl drain cka-master --delete-emptydir-data --ignore-daem
 ```bash
 root@cka-master:~# apt-mark unhold kubeadm
 root@cka-master:~# apt update
-root@cka-master:~# apt install kubeadm=1.28.3-00 -y
+root@cka-master:~# apt install kubeadm=1.28.3-1.1 -y
 Reading package lists... Done
-Setting up kubeadm (1.28.3-00)
+Setting up kubeadm (1.28.3-1.1)
 ...
 root@cka-master:~# apt-mark hold kubeadm
 

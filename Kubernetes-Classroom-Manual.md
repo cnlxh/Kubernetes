@@ -563,7 +563,10 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 ## 部署Calico网络插件
 
-为解决镜像无法拉取，我做了国内镜像，请使用此镜像
+```bash
+kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml 
+```
+为解决镜像无法拉取，我做了国内镜像，如果官方的镜像无法拉去，请使用此镜像，但是此镜像版本可能较旧
 
 ```bash
 kubectl apply -f https://gitee.com/cnlxh/Kubernetes/raw/master/cka-yaml/calico.yaml

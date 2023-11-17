@@ -57,20 +57,6 @@ esac
 
 cd /root
 
-cat > /etc/apt/sources.list <<EOF
-deb https://download.docker.com/linux/ubuntu focal stable
-deb https://mirror.nju.edu.cn/ubuntu focal main restricted
-deb https://mirror.nju.edu.cn/ubuntu focal-updates main restricted
-deb https://mirror.nju.edu.cn/ubuntu focal universe
-deb https://mirror.nju.edu.cn/ubuntu focal-updates universe
-deb https://mirror.nju.edu.cn/ubuntu focal multiverse
-deb https://mirror.nju.edu.cn/ubuntu focal-updates multiverse
-deb https://mirror.nju.edu.cn/ubuntu focal-backports main restricted universe multiverse
-deb https://mirror.nju.edu.cn/ubuntu focal-security main restricted
-deb https://mirror.nju.edu.cn/ubuntu focal-security universe
-deb https://mirror.nju.edu.cn/ubuntu focal-security multiverse
-EOF
-
 echo 'Install utility tool on cka-master'
 apt update &> /dev/null 
 apt install sshpass wget bash-completion ansible -y &> /dev/null
@@ -117,16 +103,33 @@ cat > create-k8s.yaml <<'EOF'
   become: yes
   remote_user: root
   tasks:
+    - name: Deploy repos on ubuntu
+      shell: |
+        cat > /etc/apt/sources.list <<EOF
+        deb https://download.docker.com/linux/ubuntu focal stable
+        deb https://mirror.nju.edu.cn/ubuntu focal main restricted
+        deb https://mirror.nju.edu.cn/ubuntu focal-updates main restricted
+        deb https://mirror.nju.edu.cn/ubuntu focal universe
+        deb https://mirror.nju.edu.cn/ubuntu focal-updates universe
+        deb https://mirror.nju.edu.cn/ubuntu focal multiverse
+        deb https://mirror.nju.edu.cn/ubuntu focal-updates multiverse
+        deb https://mirror.nju.edu.cn/ubuntu focal-backports main restricted universe multiverse
+        deb https://mirror.nju.edu.cn/ubuntu focal-security main restricted
+        deb https://mirror.nju.edu.cn/ubuntu focal-security universe
+        deb https://mirror.nju.edu.cn/ubuntu focal-security multiverse
+        deb https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /
+        EOF
+
     - name: clean apt lock
       shell: |
         rm -rf /var/lib/apt/lists/lock
         rm -rf /var/cache/apt/archives/lock
         rm -rf /var/lib/dpkg/lock*
         dpkg --configure -a
-    - name: Modify Ubuntu Repository to Nanjing Edu
+    - name: Modify docker and k8s gpg key
       shell: |
-        cp /etc/apt/sources.list /etc/apt/sources.list.bak
-        sed -i 's/^deb.*archive.ubuntu.com/deb https:\/\/mirrors.nju.edu.cn/' /etc/apt/sources.list
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | apt-key add -
     # - name: Deploy Docker Repository
     #   shell: |
     #     apt-get -y install apt-transport-https ca-certificates curl software-properties-common gnupg
@@ -189,7 +192,7 @@ cat > create-k8s.yaml <<'EOF'
             apt update  
         - name: Deploy CRI-Docker
           apt:
-            deb: https://ghproxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.4/cri-dockerd_0.3.4.3-0.ubuntu-focal_amd64.deb
+            deb: https://gh-proxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.7/cri-dockerd_0.3.7.3-0.ubuntu-focal_amd64.deb
 
       rescue:
         - name: clean apt lock
@@ -201,7 +204,7 @@ cat > create-k8s.yaml <<'EOF'
             apt update  
         - name: Deploy CRI-Docker
           apt:
-            deb: https://slink.ltd/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.4/cri-dockerd_0.3.4.3-0.ubuntu-focal_amd64.deb
+            deb: https://slink.ltd/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.7/cri-dockerd_0.3.7.3-0.ubuntu-focal_amd64.deb
 
     - name: modify sandbox image to aliyun
       shell: |
@@ -237,12 +240,12 @@ cat > create-k8s.yaml <<'EOF'
       shell: |
         modprobe br_netfilter
         sysctl --system
-    - name: add Nanjing Edu kubernetes repo on ubuntu
+    - name: add kubernetes gpg key on ubuntu
       shell: |
-        cat > /etc/apt/sources.list.d/k8s.list <<EOF
-        deb https://mirror.nju.edu.cn/kubernetes/apt/ kubernetes-xenial main
-        EOF
-        curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add -
+        # cat > /etc/apt/sources.list.d/k8s.list <<EOF
+        # deb https://mirror.nju.edu.cn/kubernetes/apt/ kubernetes-xenial main
+        # EOF
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | apt-key add -
         apt update
       when: ansible_facts.distribution == 'Ubuntu'
       #- name: add kubernetes repo
@@ -265,9 +268,9 @@ cat > create-k8s.yaml <<'EOF'
     - name: install kubeadm kubectl kubelet
       package:
         name:
-          - kubeadm=1.28.2-00
-          - kubelet=1.28.2-00
-          - kubectl=1.28.2-00
+          - kubeadm=1.28.2-1.1
+          - kubelet=1.28.2-1.1
+          - kubectl=1.28.2-1.1
           - sshpass
         state: present
     - name: clean apt lock
@@ -343,7 +346,7 @@ cat > create-k8s.yaml <<'EOF'
       when: "'master' in group_names"
     - name: Deploy Calico
       shell: |
-        kubectl create -f https://gitee.com/cnlxh/Kubernetes/raw/master/cka-yaml/calico.yaml
+        kubectl create -f https://docs.projectcalico.org/manifests/calico.yaml
         sleep 30s
       when: "'master' in group_names"
     - name: join workers
