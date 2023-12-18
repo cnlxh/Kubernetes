@@ -119,11 +119,11 @@ mirror安装好之后再配置，直接done
 
 输入用户名、计算机名、密码等信息，根据课程安排，你的计算机名必须是如下所述：
 
-1. 第一台: CKA-Master
+1. 第一台: k8s-master
 
-2. 第二台: CKA-Worker1
+2. 第二台: k8s-worker1
 
-3. 第三台: CKA-Worker2
+3. 第三台: k8s-worker2
 
 ![start](https://gitee.com/cnlxh/Kubernetes/raw/master/images/system/server/useradd.png)
 
@@ -149,7 +149,7 @@ mirror安装好之后再配置，直接done
 
 # 获取临时地址
 
-先设置临时地址用于SSH工具配置，在控制台输入dhclient命令，从配置好的30网段获取临时IP
+先设置临时地址用于SSH工具配置，在控制台输入dhclient命令，从配置好的网段获取临时IP
 
 ```bash
 dhclient
@@ -160,7 +160,7 @@ dhclient
 推荐的工具下载链接如下，你也可以使用自己熟悉的
 
 ```bash
-https://download.mobatek.net/2312023031823706/MobaXterm_Portable_v23.1.zip
+https://download.mobatek.net/2352023111832715/MobaXterm_Portable_v23.5.zip
 ```
 
 # 设置永久静态IP地址
@@ -175,13 +175,13 @@ https://download.mobatek.net/2312023031823706/MobaXterm_Portable_v23.1.zip
 
 再次提醒，请注意，三台虚拟机的IP和主机名必须如下：
 
-1. 第一台: CKA-Master  对应的IP 为192.168.30.130
+1. 第一台: k8s-master  对应的IP 为192.168.8.3
 
-2. 第二台: CKA-Worker1 对应的IP 为192.168.30.131
+2. 第二台: k8s-worker1 对应的IP 为192.168.8.4
 
-3. 第三台: CKA-Worker2 对应的IP 为192.168.30.132
+3. 第三台: k8s-worker2 对应的IP 为192.168.8.5
 
-下面是举例cka-master配置IP方法，直接复制粘贴即可，第二台和第三台记得更换IP地址
+下面是举例k8s-master配置IP方法，直接复制粘贴即可，第二台和第三台记得更换IP地址
 
 ```bash
 cat > /etc/netplan/00-installer-config.yaml <<EOF
@@ -190,8 +190,8 @@ network:
   ethernets:
     ens33:
       dhcp4: false
-      addresses: [192.168.30.130/24]
-      gateway4: 192.168.30.2
+      addresses: [192.168.8.3/24]
+      gateway4: 192.168.8.1
       nameservers:
         addresses: [114.114.114.114]
   version: 2
@@ -245,9 +245,9 @@ apt install vim wget curl bash-completion -y
 
 ```bash
 cat >> /etc/hosts <<EOF
-192.168.30.130 cka-master
-192.168.30.131 cka-worker1
-192.168.30.132 cka-worker2
+192.168.8.3 k8s-master
+192.168.8.4 k8s-worker1
+192.168.8.5 k8s-worker2
 EOF
 ```
 
