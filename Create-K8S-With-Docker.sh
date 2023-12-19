@@ -1,23 +1,23 @@
 #!/bin/bash
 
 echo "######################################################################################################
-#    Author：Xiaohui Li
+#    Author: Xiaohui Li
 #    Contact me via WeChat: Lxh_Chat
 #    Contact me via QQ: 939958092
-#    Version： 2022-03-01
+#    Version: 2022-03-01
 #
 #    please make sure you have three node and have been done as below:
 #
 #    1. complete /etc/hosts file
 #    
-#       192.168.30.130 cka-master
-#       192.168.30.131 cka-worker1
-#       192.168.30.132 cka-worker2
+#       192.168.8.3 k8s-master
+#       192.168.8.4 k8s-worker1
+#       192.168.8.5 k8s-worker2
 #      
-#    2. root password has been set to 1 on all of node
+#    2. root password has been set to vagrant on all of node
 #
 #       tips:
-#         sudo echo root:1 | chpasswd
+#         sudo echo root:vagrant | chpasswd
 #		
 #    3. enable root ssh login on /etc/ssh/sshd_config
 #
@@ -25,7 +25,7 @@ echo "##########################################################################
 #         sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 #         sudo systemctl restart sshd
 #
-#    4. this tools will only install kubernetes v1.28.2 for CKA Exam upgrade, if you want other version, please modify kubeadm kubelet kubectl version in script
+#    4. this tools will only install kubernetes v1.29.0-1.1 for CKA Exam upgrade, if you want other version, please modify kubeadm kubelet kubectl version in script
 #
 ######################################################################################################"
 echo
@@ -57,10 +57,19 @@ esac
 
 cd /root
 
-echo 'Install utility tool on cka-master'
+echo 'Install utility tool on k8s-master'
 apt update &> /dev/null 
 apt install sshpass wget bash-completion ansible -y &> /dev/null
-sed -i 's/^#host_key_checking = False/host_key_checking = False/' /etc/ansible/ansible.cfg
+apt install sshpass wget bash-completion ansible -y &> /dev/null
+mkdir /etc/ansible &> /dev/null
+cat > /etc/ansible/ansible.cfg <<'EOF'
+[defaults]
+command_warnings=False
+inventory=/etc/ansible/hosts
+host_key_checking=False
+remote_user=root
+EOF
+
 if [ $? -ne 0 ];then
 exit;
 fi
@@ -76,11 +85,11 @@ case $? in
 ;;
 esac
 
-sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-master &> /dev/null
+sshpass -p vagrant ssh-copy-id -o StrictHostKeyChecking=no root@k8s-master &> /dev/null
 
-sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-worker1 &> /dev/null
+sshpass -p vagrant ssh-copy-id -o StrictHostKeyChecking=no root@k8s-worker1 &> /dev/null
 
-sshpass -p 1 ssh-copy-id -o StrictHostKeyChecking=no root@cka-worker2 &> /dev/null
+sshpass -p vagrant ssh-copy-id -o StrictHostKeyChecking=no root@k8s-worker2 &> /dev/null
 
 if [ $? -ne 0 ];then
 exit;
@@ -88,10 +97,10 @@ fi
 
 cat > /etc/ansible/hosts <<EOF
 [master]
-cka-master ansible_user=root ansible_password=1
+k8s-master ansible_user=root ansible_password=vagrant
 [worker]
-cka-worker1 ansible_user=root ansible_password=1
-cka-worker2 ansible_user=root ansible_password=1
+k8s-worker1 ansible_user=root ansible_password=vagrant
+k8s-worker2 ansible_user=root ansible_password=vagrant
 EOF
 if [ $? -ne 0 ];then
 exit;
@@ -105,31 +114,123 @@ cat > create-k8s.yaml <<'EOF'
   tasks:
     - name: Deploy repos on ubuntu
       shell: |
-        cat > /etc/apt/sources.list <<EOF
-        deb https://download.docker.com/linux/ubuntu focal stable
-        deb https://mirror.nju.edu.cn/ubuntu focal main restricted
-        deb https://mirror.nju.edu.cn/ubuntu focal-updates main restricted
-        deb https://mirror.nju.edu.cn/ubuntu focal universe
-        deb https://mirror.nju.edu.cn/ubuntu focal-updates universe
-        deb https://mirror.nju.edu.cn/ubuntu focal multiverse
-        deb https://mirror.nju.edu.cn/ubuntu focal-updates multiverse
-        deb https://mirror.nju.edu.cn/ubuntu focal-backports main restricted universe multiverse
-        deb https://mirror.nju.edu.cn/ubuntu focal-security main restricted
-        deb https://mirror.nju.edu.cn/ubuntu focal-security universe
-        deb https://mirror.nju.edu.cn/ubuntu focal-security multiverse
-        deb https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /
-        EOF
+        cat > /etc/apt/sources.list <<EOF1
+        deb https://mirror.nju.edu.cn/docker-ce/linux/ubuntu jammy stable
+        deb https://mirror.nju.edu.cn/ubuntu jammy main restricted
+        deb https://mirror.nju.edu.cn/ubuntu jammy-updates main restricted
+        deb https://mirror.nju.edu.cn/ubuntu jammy universe
+        deb https://mirror.nju.edu.cn/ubuntu jammy-updates universe
+        deb https://mirror.nju.edu.cn/ubuntu jammy multiverse
+        deb https://mirror.nju.edu.cn/ubuntu jammy-updates multiverse
+        deb https://mirror.nju.edu.cn/ubuntu jammy-backports main restricted universe multiverse
+        deb https://mirror.nju.edu.cn/ubuntu jammy-security main restricted
+        deb https://mirror.nju.edu.cn/ubuntu jammy-security universe
+        deb https://mirror.nju.edu.cn/ubuntu jammy-security multiverse
+        deb https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /
+        EOF1
 
-    - name: clean apt lock
+    - name: Deoloy docker and k8s gpg key
       shell: |
-        rm -rf /var/lib/apt/lists/lock
-        rm -rf /var/cache/apt/archives/lock
-        rm -rf /var/lib/dpkg/lock*
-        dpkg --configure -a
-    - name: Modify docker and k8s gpg key
-      shell: |
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | apt-key add -
+        cat > /etc/apt/docker.gpg <<'EOF2'
+        -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+        mQINBFit2ioBEADhWpZ8/wvZ6hUTiXOwQHXMAlaFHcPH9hAtr4F1y2+OYdbtMuth
+        lqqwp028AqyY+PRfVMtSYMbjuQuu5byyKR01BbqYhuS3jtqQmljZ/bJvXqnmiVXh
+        38UuLa+z077PxyxQhu5BbqntTPQMfiyqEiU+BKbq2WmANUKQf+1AmZY/IruOXbnq
+        L4C1+gJ8vfmXQt99npCaxEjaNRVYfOS8QcixNzHUYnb6emjlANyEVlZzeqo7XKl7
+        UrwV5inawTSzWNvtjEjj4nJL8NsLwscpLPQUhTQ+7BbQXAwAmeHCUTQIvvWXqw0N
+        cmhh4HgeQscQHYgOJjjDVfoY5MucvglbIgCqfzAHW9jxmRL4qbMZj+b1XoePEtht
+        ku4bIQN1X5P07fNWzlgaRL5Z4POXDDZTlIQ/El58j9kp4bnWRCJW0lya+f8ocodo
+        vZZ+Doi+fy4D5ZGrL4XEcIQP/Lv5uFyf+kQtl/94VFYVJOleAv8W92KdgDkhTcTD
+        G7c0tIkVEKNUq48b3aQ64NOZQW7fVjfoKwEZdOqPE72Pa45jrZzvUFxSpdiNk2tZ
+        XYukHjlxxEgBdC/J3cMMNRE1F4NCA3ApfV1Y7/hTeOnmDuDYwr9/obA8t016Yljj
+        q5rdkywPf4JF8mXUW5eCN1vAFHxeg9ZWemhBtQmGxXnw9M+z6hWwc6ahmwARAQAB
+        tCtEb2NrZXIgUmVsZWFzZSAoQ0UgZGViKSA8ZG9ja2VyQGRvY2tlci5jb20+iQI3
+        BBMBCgAhBQJYrefAAhsvBQsJCAcDBRUKCQgLBRYCAwEAAh4BAheAAAoJEI2BgDwO
+        v82IsskP/iQZo68flDQmNvn8X5XTd6RRaUH33kXYXquT6NkHJciS7E2gTJmqvMqd
+        tI4mNYHCSEYxI5qrcYV5YqX9P6+Ko+vozo4nseUQLPH/ATQ4qL0Zok+1jkag3Lgk
+        jonyUf9bwtWxFp05HC3GMHPhhcUSexCxQLQvnFWXD2sWLKivHp2fT8QbRGeZ+d3m
+        6fqcd5Fu7pxsqm0EUDK5NL+nPIgYhN+auTrhgzhK1CShfGccM/wfRlei9Utz6p9P
+        XRKIlWnXtT4qNGZNTN0tR+NLG/6Bqd8OYBaFAUcue/w1VW6JQ2VGYZHnZu9S8LMc
+        FYBa5Ig9PxwGQOgq6RDKDbV+PqTQT5EFMeR1mrjckk4DQJjbxeMZbiNMG5kGECA8
+        g383P3elhn03WGbEEa4MNc3Z4+7c236QI3xWJfNPdUbXRaAwhy/6rTSFbzwKB0Jm
+        ebwzQfwjQY6f55MiI/RqDCyuPj3r3jyVRkK86pQKBAJwFHyqj9KaKXMZjfVnowLh
+        9svIGfNbGHpucATqREvUHuQbNnqkCx8VVhtYkhDb9fEP2xBu5VvHbR+3nfVhMut5
+        G34Ct5RS7Jt6LIfFdtcn8CaSas/l1HbiGeRgc70X/9aYx/V/CEJv0lIe8gP6uDoW
+        FPIZ7d6vH+Vro6xuWEGiuMaiznap2KhZmpkgfupyFmplh0s6knymuQINBFit2ioB
+        EADneL9S9m4vhU3blaRjVUUyJ7b/qTjcSylvCH5XUE6R2k+ckEZjfAMZPLpO+/tF
+        M2JIJMD4SifKuS3xck9KtZGCufGmcwiLQRzeHF7vJUKrLD5RTkNi23ydvWZgPjtx
+        Q+DTT1Zcn7BrQFY6FgnRoUVIxwtdw1bMY/89rsFgS5wwuMESd3Q2RYgb7EOFOpnu
+        w6da7WakWf4IhnF5nsNYGDVaIHzpiqCl+uTbf1epCjrOlIzkZ3Z3Yk5CM/TiFzPk
+        z2lLz89cpD8U+NtCsfagWWfjd2U3jDapgH+7nQnCEWpROtzaKHG6lA3pXdix5zG8
+        eRc6/0IbUSWvfjKxLLPfNeCS2pCL3IeEI5nothEEYdQH6szpLog79xB9dVnJyKJb
+        VfxXnseoYqVrRz2VVbUI5Blwm6B40E3eGVfUQWiux54DspyVMMk41Mx7QJ3iynIa
+        1N4ZAqVMAEruyXTRTxc9XW0tYhDMA/1GYvz0EmFpm8LzTHA6sFVtPm/ZlNCX6P1X
+        zJwrv7DSQKD6GGlBQUX+OeEJ8tTkkf8QTJSPUdh8P8YxDFS5EOGAvhhpMBYD42kQ
+        pqXjEC+XcycTvGI7impgv9PDY1RCC1zkBjKPa120rNhv/hkVk/YhuGoajoHyy4h7
+        ZQopdcMtpN2dgmhEegny9JCSwxfQmQ0zK0g7m6SHiKMwjwARAQABiQQ+BBgBCAAJ
+        BQJYrdoqAhsCAikJEI2BgDwOv82IwV0gBBkBCAAGBQJYrdoqAAoJEH6gqcPyc/zY
+        1WAP/2wJ+R0gE6qsce3rjaIz58PJmc8goKrir5hnElWhPgbq7cYIsW5qiFyLhkdp
+        YcMmhD9mRiPpQn6Ya2w3e3B8zfIVKipbMBnke/ytZ9M7qHmDCcjoiSmwEXN3wKYI
+        mD9VHONsl/CG1rU9Isw1jtB5g1YxuBA7M/m36XN6x2u+NtNMDB9P56yc4gfsZVES
+        KA9v+yY2/l45L8d/WUkUi0YXomn6hyBGI7JrBLq0CX37GEYP6O9rrKipfz73XfO7
+        JIGzOKZlljb/D9RX/g7nRbCn+3EtH7xnk+TK/50euEKw8SMUg147sJTcpQmv6UzZ
+        cM4JgL0HbHVCojV4C/plELwMddALOFeYQzTif6sMRPf+3DSj8frbInjChC3yOLy0
+        6br92KFom17EIj2CAcoeq7UPhi2oouYBwPxh5ytdehJkoo+sN7RIWua6P2WSmon5
+        U888cSylXC0+ADFdgLX9K2zrDVYUG1vo8CX0vzxFBaHwN6Px26fhIT1/hYUHQR1z
+        VfNDcyQmXqkOnZvvoMfz/Q0s9BhFJ/zU6AgQbIZE/hm1spsfgvtsD1frZfygXJ9f
+        irP+MSAI80xHSf91qSRZOj4Pl3ZJNbq4yYxv0b1pkMqeGdjdCYhLU+LZ4wbQmpCk
+        SVe2prlLureigXtmZfkqevRz7FrIZiu9ky8wnCAPwC7/zmS18rgP/17bOtL4/iIz
+        QhxAAoAMWVrGyJivSkjhSGx1uCojsWfsTAm11P7jsruIL61ZzMUVE2aM3Pmj5G+W
+        9AcZ58Em+1WsVnAXdUR//bMmhyr8wL/G1YO1V3JEJTRdxsSxdYa4deGBBY/Adpsw
+        24jxhOJR+lsJpqIUeb999+R8euDhRHG9eFO7DRu6weatUJ6suupoDTRWtr/4yGqe
+        dKxV3qQhNLSnaAzqW/1nA3iUB4k7kCaKZxhdhDbClf9P37qaRW467BLCVO/coL3y
+        Vm50dwdrNtKpMBh3ZpbB1uJvgi9mXtyBOMJ3v8RZeDzFiG8HdCtg9RvIt/AIFoHR
+        H3S+U79NT6i0KPzLImDfs8T7RlpyuMc4Ufs8ggyg9v3Ae6cN3eQyxcK3w0cbBwsh
+        /nQNfsA6uu+9H7NhbehBMhYnpNZyrHzCmzyXkauwRAqoCbGCNykTRwsur9gS41TQ
+        M8ssD1jFheOJf3hODnkKU+HKjvMROl1DK7zdmLdNzA1cvtZH/nCC9KPj1z8QC47S
+        xx+dTZSx4ONAhwbS/LN3PoKtn8LPjY9NP9uDWI+TWYquS2U+KHDrBDlsgozDbs/O
+        jCxcpDzNmXpWQHEtHU7649OXHP7UeNST1mCUCH5qdank0V1iejF6/CfTFU4MfcrG
+        YT90qFF93M3v01BbxP+EIY2/9tiIPbrd
+        =0YYh
+        -----END PGP PUBLIC KEY BLOCK-----
+        EOF2
+        cat > /etc/apt/k8s.gpg <<'EOF3'
+        -----BEGIN PGP PUBLIC KEY BLOCK-----
+        Version: GnuPG v2.0.15 (GNU/Linux)
+
+        mQENBGMHoXcBCADukGOEQyleViOgtkMVa7hKifP6POCTh+98xNW4TfHK/nBJN2sm
+        u4XaiUmtB9UuGt9jl8VxQg4hOMRf40coIwHsNwtSrc2R9v5Kgpvcv537QVIigVHH
+        WMNvXeoZkkoDIUljvbCEDWaEhS9R5OMYKd4AaJ+f1c8OELhEcV2dAQLLyjtnEaF/
+        qmREN+3Y9+5VcRZvQHeyBxCG+hdUGE740ixgnY2gSqZ/J4YeQntQ6pMUEhT6pbaE
+        10q2HUierj/im0V+ZUdCh46Lk/Rdfa5ZKlqYOiA2iN1coDPIdyqKavcdfPqSraKF
+        Lan2KLcZcgTxP+0+HfzKefvGEnZa11civbe9ABEBAAG0PmlzdjprdWJlcm5ldGVz
+        IE9CUyBQcm9qZWN0IDxpc3Y6a3ViZXJuZXRlc0BidWlsZC5vcGVuc3VzZS5vcmc+
+        iQE+BBMBCAAoBQJjB6F3AhsDBQkEHrAABgsJCAcDAgYVCAIJCgsEFgIDAQIeAQIX
+        gAAKCRAjRlTamilkNhnRCADud9iv+2CUtJGyZhhdzzd55wRKvHGmSY4eIAEKChmf
+        1+BHwFnzBzbdNtnglY2xSATqKIWikzXI1stAwi8qR0dK32CS+ofMS6OUklm26Yd1
+        jBWFg4LCCh8S21GLcuudHtW9QNCCjlByS4gyEJ+eYTOo2dWp88NWEzVXIKRtfLHV
+        myHJnt2QLmWOeYTgmCzpeT8onl2Lp19bryRGla+Ms0AmlCltPn8j+hPeADDtR2bv
+        7cTLDi/nA46u3SLV1P6yjC1ejOOswtgxppTxvLgYniS22aSnoqm47l111zZiZKJ5
+        bCm1Th6qJFJwOrGEOu3aV1iKaQmN2k4G2DixsHFAU3ZeiQIcBBMBAgAGBQJjB6F3
+        AAoJEM8Lkoze1k873TQP/0t2F/jltLRQMG7VCLw7+ps5JCW5FIqu/S2i9gSdNA0E
+        42u+LyxjG3YxmVoVRMsxeu4kErxr8bLcA4p71W/nKeqwF9VLuXKirsBC7z2syFiL
+        Ndl0ARnC3ENwuMVlSCwJO0MM5NiJuLOqOGYyD1XzSfnCzkXN0JGA/bfPRS5mPfoW
+        0OHIRZFhqE7ED6wyWpHIKT8rXkESFwszUwW/D7o1HagX7+duLt8WkrohGbxTJ215
+        YanOKSqyKd+6YGzDNUoGuMNPZJ5wTrThOkTzEFZ4HjmQ16w5xmcUISnCZd4nhsbS
+        qN/UyV9Vu3lnkautS15E4CcjP1RRzSkT0jka62vPtAzw+PiGryM1F7svuRaEnJD5
+        GXzj9RCUaR6vtFVvqqo4fvbA99k4XXj+dFAXW0TRZ/g2QMePW9cdWielcr+vHF4Z
+        2EnsAmdvF7r5e2JCOU3N8OUodebU6ws4VgRVG9gptQgfMR0vciBbNDG2Xuk1WDk1
+        qtscbfm5FVL36o7dkjA0x+TYCtqZIr4x3mmfAYFUqzxpfyXbSHqUJR2CoWxlyz72
+        XnJ7UEo/0UbgzGzscxLPDyJHMM5Dn/Ni9FVTVKlALHnFOYYSTluoYACF1DMt7NJ3
+        oyA0MELL0JQzEinixqxpZ1taOmVR/8pQVrqstqwqsp3RABaeZ80JbigUC29zJUVf
+        =F4EX
+        -----END PGP PUBLIC KEY BLOCK-----
+        EOF3
+
+        cat /etc/apt/docker.gpg | apt-key add -
+        cat /etc/apt/k8s.gpg | apt-key add -
+        apt update
     # - name: Deploy Docker Repository
     #   shell: |
     #     apt-get -y install apt-transport-https ca-certificates curl software-properties-common gnupg
@@ -139,13 +240,7 @@ cat > create-k8s.yaml <<'EOF'
     #     curl -fsSL https://mirror.nju.edu.cn/docker-ce/linux/ubuntu/gpg | apt-key add -
     #     add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable"
     #     apt-get -y update
-    - name: clean apt lock
-      shell: |
-        rm -rf /var/lib/apt/lists/lock
-        rm -rf /var/cache/apt/archives/lock
-        rm -rf /var/lib/dpkg/lock*
-        dpkg --configure -a
-        apt update
+
     - name: Deploy chrony for make sure time on all node is same
       apt:
         pkg:
@@ -162,9 +257,13 @@ cat > create-k8s.yaml <<'EOF'
     - name: Deploy Docker on all node
       apt:
         pkg:
+        - ca-certificates
+        - curl
+        - gnupg
         - docker-ce
         - docker-ce-cli
         - containerd.io
+        - docker-buildx-plugin
         - docker-compose-plugin
     - name: ADD 163 docker mirror
       shell: |
@@ -183,16 +282,9 @@ cat > create-k8s.yaml <<'EOF'
         enabled: yes
 
     - block:
-        - name: clean apt lock
-          shell: |
-            rm -rf /var/lib/apt/lists/lock
-            rm -rf /var/cache/apt/archives/lock
-            rm -rf /var/lib/dpkg/lock*
-            dpkg --configure -a
-            apt update  
         - name: Deploy CRI-Docker
           apt:
-            deb: https://gh-proxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.7/cri-dockerd_0.3.7.3-0.ubuntu-focal_amd64.deb
+            deb: https://ghproxy.net/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.8/cri-dockerd_0.3.8.3-0.ubuntu-jammy_amd64.deb
 
       rescue:
         - name: clean apt lock
@@ -200,11 +292,10 @@ cat > create-k8s.yaml <<'EOF'
             rm -rf /var/lib/apt/lists/lock
             rm -rf /var/cache/apt/archives/lock
             rm -rf /var/lib/dpkg/lock*
-            dpkg --configure -a
             apt update  
         - name: Deploy CRI-Docker
           apt:
-            deb: https://slink.ltd/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.7/cri-dockerd_0.3.7.3-0.ubuntu-focal_amd64.deb
+            deb: https://mirror.ghproxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.8/cri-dockerd_0.3.8.3-0.ubuntu-jammy_amd64.deb
 
     - name: modify sandbox image to aliyun
       shell: |
@@ -240,14 +331,14 @@ cat > create-k8s.yaml <<'EOF'
       shell: |
         modprobe br_netfilter
         sysctl --system
-    - name: add kubernetes gpg key on ubuntu
-      shell: |
-        # cat > /etc/apt/sources.list.d/k8s.list <<EOF
-        # deb https://mirror.nju.edu.cn/kubernetes/apt/ kubernetes-xenial main
-        # EOF
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | apt-key add -
-        apt update
-      when: ansible_facts.distribution == 'Ubuntu'
+    # - name: add kubernetes gpg key on ubuntu
+    #   shell: |
+    #     # cat > /etc/apt/sources.list.d/k8s.list <<EOF
+    #     # deb https://mirror.nju.edu.cn/kubernetes/apt/ kubernetes-xenial main
+    #     # EOF
+    #     curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | apt-key add -
+    #     apt update
+    #   when: ansible_facts.distribution == 'Ubuntu'
       #- name: add kubernetes repo
       #  apt_repository:
       #  repo: deb https://mirrors.tuna.tsinghua.edu.cn/kubernetes/apt/ kubernetes-xenial main
@@ -268,9 +359,9 @@ cat > create-k8s.yaml <<'EOF'
     - name: install kubeadm kubectl kubelet
       package:
         name:
-          - kubeadm=1.28.2-1.1
-          - kubelet=1.28.2-1.1
-          - kubectl=1.28.2-1.1
+          - kubeadm=1.29.0-1.1
+          - kubelet=1.29.0-1.1
+          - kubectl=1.29.0-1.1
           - sshpass
         state: present
     - name: clean apt lock
@@ -278,7 +369,6 @@ cat > create-k8s.yaml <<'EOF'
         rm -rf /var/lib/apt/lists/lock
         rm -rf /var/cache/apt/archives/lock
         rm -rf /var/lib/dpkg/lock*
-        dpkg --configure -a
         apt update
     - name: integrate with docker
       shell: crictl config runtime-endpoint unix:///run/cri-dockerd.sock
@@ -292,14 +382,14 @@ cat > create-k8s.yaml <<'EOF'
     #   lineinfile:
     #     path: kubeadm.yaml
     #     regexp: '.*advert.*'
-    #     line: '  advertiseAddress: 192.168.30.130'
+    #     line: '  advertiseAddress: 192.168.8.3'
     #     state: present
     #   when: "'master' in group_names"
     - name: modify cluster name
       lineinfile:
         path: kubeadm.yaml
         regexp: '.*name.*'
-        line: '  name: cka-master'
+        line: '  name: k8s-master'
         state: present
       when: "'master' in group_names"
     - name: modify image repository
@@ -338,10 +428,10 @@ cat > create-k8s.yaml <<'EOF'
         mkdir -p $HOME/.kube
         cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
         chown $(id -u):$(id -g) $HOME/.kube/config
-        sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-worker1 mkdir /root/.kube 
-        sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-worker2 mkdir /root/.kube
-        scp /etc/kubernetes/admin.conf root@cka-worker1:/root/.kube/config
-        scp /etc/kubernetes/admin.conf root@cka-worker2:/root/.kube/config
+        sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 mkdir /root/.kube 
+        sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker2 mkdir /root/.kube
+        scp /etc/kubernetes/admin.conf root@k8s-worker1:/root/.kube/config
+        scp /etc/kubernetes/admin.conf root@k8s-worker2:/root/.kube/config
         sleep 30s
       when: "'master' in group_names"
     - name: Deploy Calico
@@ -352,13 +442,13 @@ cat > create-k8s.yaml <<'EOF'
     - name: join workers
       shell: |
         sleep 30
-        join=`sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-master kubeadm token create --print-join-command`
+        join=`sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-master kubeadm token create --print-join-command`
         echo $join --cri-socket=unix:///var/run/cri-dockerd.sock | bash
       when: "'worker' in group_names"
     - name: assign worker role label to workers
       shell: |
         sleep 30
-        kubectl label nodes cka-worker2 cka-worker1 node-role.kubernetes.io/worker=
+        kubectl label nodes k8s-worker2 k8s-worker1 node-role.kubernetes.io/worker=
       when: "'master' in group_names"
 
 EOF
@@ -387,7 +477,7 @@ source /etc/bash_completion.d/kubeadm
 
 echo
 
-echo "Please wait one minute for nodes ready"
+echo "Please wait one minute for nodes ready, please type: 'kubectl get pod -A' if not ready"
 
 echo
 

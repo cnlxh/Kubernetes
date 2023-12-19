@@ -187,13 +187,17 @@ https://download.mobatek.net/2352023111832715/MobaXterm_Portable_v23.5.zip
 cat > /etc/netplan/00-installer-config.yaml <<EOF
 # This is the network config written by 'subiquity'
 network:
+  renderer: networkd
   ethernets:
-    ens33:
-      dhcp4: false
-      addresses: [192.168.8.3/24]
-      gateway4: 192.168.8.1
+    enp0s3:
+      addresses:
+        - 192.168.8.3/24
+      routes:
+        - to: default
+          via: 192.168.8.1
       nameservers:
-        addresses: [114.114.114.114]
+        addresses:
+          - 223.5.5.5
   version: 2
 EOF
 
