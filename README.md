@@ -31,15 +31,15 @@
 
 2. `Create-ECS-on-AliCloud.pdf: ` 用于学员电脑不满足配置要求，在阿里云上创建虚拟机所用，其内包含在阿里云上购买云主机的所有必要流程
 
-3. `Create-K8S-With-Docker.sh: ` 用于<font color="red">面授</font>第一天课程没有出席，但后续需要跟班的学员创建集群所用或由于各种原因需要重装集群使用，<font color="red">不适用于我赢职场的答疑，我赢职场答疑使用群公告的虚拟机，</font>包含VMware虚拟机创建只需要在CKA-Master虚拟机上使用本脚本，可以在3台虚拟机上自动安装一套3节点的Kubernetes 集群，使用此脚本时，务必确保在3台虚拟机上同时完成了以下事项:
+3. `Create-K8S-With-Docker.sh: ` 用于<font color="red">面授</font>第一天课程没有出席，但后续需要跟班的学员创建集群所用或由于各种原因需要重装集群使用，<font color="red">不适用于我赢职场的答疑，我赢职场答疑使用群公告的虚拟机，</font>包含VMware虚拟机创建只需要在k8s-master虚拟机上使用本脚本，可以在3台虚拟机上自动安装一套3节点的Kubernetes 集群，使用此脚本时，务必确保在3台虚拟机上同时完成了以下事项:
 
     1. 确保在/etc/hosts中添加了3台虚拟机的解析，另外请务必确保你的3台虚拟机主机名和IP地址的确是这样对应的，这里列出的特定主机和IP地址是课程所必须
 
-        192.168.30.130 cka-master
+        192.168.8.3 k8s-master
 
-        192.168.30.131 cka-worker1
+        192.168.8.4 k8s-worker1
 
-        192.168.30.132 cka-worker2
+        192.168.8.5 k8s-worker2
 
     2. 确保3台虚拟机都开启了root通过ssh登录的权限，如未开启，请按照以下方法开启
         ```bash
@@ -48,9 +48,9 @@
         ```
         如果不太懂sed，请手工编辑/etc/ssh/sshd_config文件，确保其内包含PermitRootLogin yes参数
 
-    3. 确保3台虚拟机的root密码都是数字1
+    3. 确保3台虚拟机的root密码都是vagrant
 
-   在确保虚拟机满足以上要求时，在CKA-Master执行以下指令，来完成集群安装
+   在确保虚拟机满足以上要求时，在k8s-master执行以下指令，来完成集群安装
 
     1. 下载并执行脚本完成集群安装
 
@@ -63,16 +63,16 @@
 
 5. `CKA-Exam-Question.md: ` 用于CKA课后练习所用，基本涵盖了CKA的所有知识点，请务必练习到位
 
-6. `CKA-Exam-Setup.sh: ` 用于部署练习环境所用，在使用此脚本之前，请确保目前3台虚拟机是刚安装好的干净集群且集群状态正常，确认集群正常后，只需要在CKA-master上执行脚本即可完成练习环境部署，具体使用方法如下：
+6. `CKA-Exam-Setup.sh: ` 用于部署练习环境所用，在使用此脚本之前，请确保目前3台虚拟机是刚安装好的干净集群且集群状态正常，确认集群正常后，只需要在k8s-master上执行脚本即可完成练习环境部署，具体使用方法如下：
 
     1. 确认集群状态是否正常，需要确保3个节点全部是Ready状态
 
         ```bash
-        root@cka-master:~# kubectl get nodes
+        root@k8s-master:~# kubectl get nodes
         NAME          STATUS   ROLES           AGE     VERSION
-        cka-master    Ready    control-plane   7d17h   v1.28.2
-        cka-worker1   Ready    worker          7d17h   v1.28.2
-        cka-worker2   Ready    worker          7d17h   v1.28.2
+        k8s-master    Ready    control-plane   7d17h   v1.29.0
+        k8s-worker1   Ready    worker          7d17h   v1.29.0
+        k8s-worker2   Ready    worker          7d17h   v1.29.0
         ```
 
     2. 执行脚本来部署练习环境
