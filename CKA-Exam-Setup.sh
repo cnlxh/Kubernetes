@@ -1,23 +1,23 @@
 #!/bin/bash
 echo "######################################################################################################
 #  
-#    Author：Xiaohui Li
+#    Author: Xiaohui Li
 #    Contact me via WeChat: Lxh_Chat
 #    Contact me via QQ: 939958092
-#    Version： 2022-03-01
+#    Version: 2022-03-01
 #
 #    Make sure you have a 3-node k8s cluster and have done the following:
 #
 #    1. complete /etc/hosts file
 #    
-#       192.168.30.130 cka-master
-#       192.168.30.131 cka-worker1
-#       192.168.30.132 cka-worker2
+#       192.168.8.3 k8s-master
+#       192.168.8.4 k8s-worker1
+#       192.168.8.5 k8s-worker2
 #
-#    2. root password has been set to 1 on all of node
+#    2. root password has been set to vagrant on all of node
 #
 #       tips:
-#         sudo echo root:1 | chpasswd
+#         sudo echo root:vagrant | chpasswd
 #		
 #    3. enable root ssh login on /etc/ssh/sshd_config
 #
@@ -25,7 +25,7 @@ echo "##########################################################################
 #         sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 #         sudo systemctl restart sshd
 #
-#    4. if you don't have that, please correct it before you are run this script
+#    4. You MUST restore the snapshot which include k8s cluster, if you don't have that, please correct it before you are run this script
 #
 ######################################################################################################"
 echo
@@ -35,7 +35,7 @@ echo
 
 function rbac {
   # cordon node for prohibit running container
-    kubectl cordon cka-worker1 &> /dev/null
+    kubectl cordon k8s-worker1 &> /dev/null
     echo 'Preparing RBAC'
     kubectl create namespace app-team1 &> /dev/null
 }
@@ -66,8 +66,8 @@ function networkpolicy {
     echo 'Preparing internal and corp namespace'
     kubectl create namespace internal &> /dev/null
     kubectl create namespace corp &> /dev/null
-    sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-master docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/nginx &> /dev/null
-    sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-worker2 docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/nginx &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-master docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/nginx &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker2 docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/nginx &> /dev/null
 
 
 
@@ -122,14 +122,14 @@ function ingress {
     kubectl create namespace ing-internal &> /dev/null
 
     echo 'Preparing "ping" image for pod'
-    for host in cka-master cka-worker2 ;do
+    for host in k8s-master k8s-worker2 ;do
       while true;do
-        sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host crictl pull registry.cn-shanghai.aliyuncs.com/cnlxh/ping &> /dev/null
-        if sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q ping;then
+        sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host crictl pull registry.cn-shanghai.aliyuncs.com/cnlxh/ping &> /dev/null
+        if sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q ping;then
             break
         else
            systemctl restart docker &> /dev/null
-           sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host crictl pull registry.cn-shanghai.aliyuncs.com/cnlxh/ping &> /dev/null
+           sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host crictl pull registry.cn-shanghai.aliyuncs.com/cnlxh/ping &> /dev/null
            break
         fi
       done
@@ -144,8 +144,8 @@ function scale {
 }
 
 function assignpod {
-    echo 'Preparing cka-worker2 node label'
-    kubectl label node cka-worker2 disk=spinning &> /dev/null
+    echo 'Preparing k8s-worker2 node label'
+    kubectl label node k8s-worker2 disk=spinning &> /dev/null
 }
 
 function health_node_count {
@@ -155,20 +155,20 @@ function health_node_count {
 
 function multi_container {
     echo 'Preparing multi container image'
-    for host in cka-master cka-worker2 ;do
+    for host in k8s-master k8s-worker2 ;do
       while true;do
-        `sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/nginx &` &> /dev/null
-        `sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/redis  &` &> /dev/null
-        `sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/memcached &` &> /dev/null
-        `sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/consul &` &> /dev/null
-        if ! sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q nginx;then
-          `sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/nginx &` &> /dev/null
-        elif ! sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q redis;then
-          `sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/redis &` &> /dev/null
-        elif ! sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q memcached;then
-          `sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/memcached &` &> /dev/null
-        elif ! sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q consul;then
-          `sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/consul &` &> /dev/null
+        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/nginx &` &> /dev/null
+        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/redis  &` &> /dev/null
+        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/memcached &` &> /dev/null
+        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/consul &` &> /dev/null
+        if ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q nginx;then
+          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/nginx &` &> /dev/null
+        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q redis;then
+          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/redis &` &> /dev/null
+        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q memcached;then
+          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/memcached &` &> /dev/null
+        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q consul;then
+          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/consul &` &> /dev/null
         # else
         #   echo ERROR: image cannot download, please check your internal or check nginx redis memcached consul docker image on all nodes
         fi
@@ -179,22 +179,22 @@ function multi_container {
 
 function pv {
     echo 'Preparing pv mount point'
-    sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-master mkdir /srv/app-data  &> /dev/null
-    sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-worker2 mkdir /srv/app-data  &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-master mkdir /srv/app-data  &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker2 mkdir /srv/app-data  &> /dev/null
 
 }
 
 function pvc {
-    echo 'Preparing nfs server on cka-master nodes'
+    echo 'Preparing nfs server on k8s-master nodes'
     apt install nfs-kernel-server nfs-common -y  &> /dev/null
     mkdir /nfsshare  &> /dev/null
     chmod 777 /nfsshare -R  &> /dev/null
     echo '/nfsshare *(rw)' > /etc/exports
     systemctl enable nfs-server nfs-mountd nfs-kernel-server nfs-utils --now &> /dev/null
     exportfs -rav  &> /dev/null
-    ssh root@cka-master 'apt update && apt install nfs-common -y'  &> /dev/null
-    ssh root@cka-worker1 'apt update && apt install nfs-common -y'  &> /dev/null
-    ssh root@cka-worker2 'apt update && apt install nfs-common -y'  &> /dev/null
+    ssh root@k8s-master 'apt update && apt install nfs-common -y'  &> /dev/null
+    ssh root@k8s-worker1 'apt update && apt install nfs-common -y'  &> /dev/null
+    ssh root@k8s-worker2 'apt update && apt install nfs-common -y'  &> /dev/null
     echo 'Preparing nfs external-provisioner'
     git clone https://gitee.com/cnlxh/nfs-subdir-external-provisioner.git  &> /dev/null
     cd nfs-subdir-external-provisioner
@@ -263,31 +263,29 @@ function highcpu {
 }
 
 function fixnode {
-    echo 'Preparing cka-worker1 state into NotReady and SchedulingDisabled'
+    echo 'Preparing k8s-worker1 state into NotReady and SchedulingDisabled'
     while `kubectl get pod -A | grep -qi ContainerCreating`;do
       sleep 1s
     done
-    sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-worker1 systemctl disable kubelet docker.service docker.socket --now &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 systemctl disable kubelet docker.service docker.socket --now &> /dev/null
 }
 
 # Excution for Preparing
 
-if ! ping -c2 cka-master &> /dev/null && ping -c2 cka-worker1 &> /dev/null && ping -c2 cka-worker2 &> /dev/null;then
-  echo "please make sure cka-master cka-worker1 cka-worker2 node is poweron"
+if ! grep -q k8s-master /etc/hostname;then
+  echo "Exam setup should be run on k8s-master node only"
+  exit 0
+fi
+
+if ! ping -c2 k8s-master &> /dev/null && ping -c2 k8s-worker1 &> /dev/null && ping -c2 k8s-worker2 &> /dev/null;then
+  echo "please make sure k8s-master k8s-worker1 k8s-worker2 node is poweron"
 fi
 
 while true; do 
 if ! kubectl get nodes &> /dev/null;then
   echo "your cluster is not running now, I'm waiting for cluster ready, Please check it"
-  sleep 1
-else
-  if kubectl get pod -A | grep -i -E 'error|back|init|creati' &> /dev/null;then
-    echo "please type 'kubectl get pod -A' in new terminal, some pod status is not normal, you can type 'kubectl describe pod' try to fix it. "
-    sleep 1
-  else
-    break
-  fi
 fi
+break
 done
 
 rbac
@@ -367,31 +365,24 @@ if ! kubectl top nodes &> /dev/null;then
   highcpu &> /dev/null   
 fi
 
-if ! sshpass -p 1 ssh -A -g -o StrictHostKeyChecking=no root@cka-worker1 systemctl is-active kubelet &> /dev/null;then
+if ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 systemctl is-active kubelet &> /dev/null;then
   fixnode &> /dev/null      
 fi
+
+echo
+echo "Waiting for Pods ready, Please wait, You can type 'kubectl get pod -A' in new terminal for check"
+echo
+while true; do 
+  if kubectl get pod -A | grep -i -E 'error|back|init|creati' &> /dev/null;then
+     echo "please type 'kubectl get pod -A' in new terminal, some pod status is not normal, you can type 'kubectl describe pod' try to fix it. "
+     sleep 1
+  else
+    break
+  fi
+done
 
 echo
 echo
 echo -ne "\033[4;96m Please don't poweroff or disconnect from internet quickly, may be container image is still in downloading now \033[0m\t"
 echo
 echo
-
-# may delete after 2024-01-01
-cat > /etc/apt/sources.list <<EOF
-deb https://download.docker.com/linux/ubuntu focal stable
-deb https://mirror.nju.edu.cn/ubuntu focal main restricted
-deb https://mirror.nju.edu.cn/ubuntu focal-updates main restricted
-deb https://mirror.nju.edu.cn/ubuntu focal universe
-deb https://mirror.nju.edu.cn/ubuntu focal-updates universe
-deb https://mirror.nju.edu.cn/ubuntu focal multiverse
-deb https://mirror.nju.edu.cn/ubuntu focal-updates multiverse
-deb https://mirror.nju.edu.cn/ubuntu focal-backports main restricted universe multiverse
-deb https://mirror.nju.edu.cn/ubuntu focal-security main restricted
-deb https://mirror.nju.edu.cn/ubuntu focal-security universe
-deb https://mirror.nju.edu.cn/ubuntu focal-security multiverse
-deb https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /
-EOF
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | apt-key add -
-apt update
