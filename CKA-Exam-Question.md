@@ -51,19 +51,19 @@ ca证书：/etc/kubernetes/pki/etcd/ca.crt
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 考试的时候可能需要安装etcd-client，具体以到时候为准，这里记得安装命令
 
 ```bash
-root@cka-master:~# apt install etcd-client -y
+root@k8s-master:~# apt install etcd-client -y
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
 ```
 备份数据
 ```bash
-ETCDCTL_API=3 etcdctl \
+root@k8s-master:~# ETCDCTL_API=3 etcdctl \
 --endpoints=https://127.0.0.1:2379 \
 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
 --cert=/etc/kubernetes/pki/etcd/server.crt \
@@ -73,13 +73,13 @@ snapshot save /srv/etcd-snapshot.db
 
 在恢复数据之前，需要停止使用和写入新数据
 ```bash
-root@cka-master:~# mv /etc/kubernetes/manifests /etc/kubernetes/manifests.bak
+root@k8s-master:~# mv /etc/kubernetes/manifests /etc/kubernetes/manifests.bak
 
-root@cka-master:~# mv /var/lib/etcd /var/lib/etcd.bak
+root@k8s-master:~# mv /var/lib/etcd /var/lib/etcd.bak
 ```
 完成数据恢复
 ```bash
-root@cka-master:~# ETCDCTL_API=3 etcdctl \
+root@k8s-master:~# ETCDCTL_API=3 etcdctl \
 --endpoints=https://127.0.0.1:2379 \
 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
 --cert=/etc/kubernetes/pki/etcd/server.crt \
@@ -90,15 +90,15 @@ snapshot restore /srv/etcd_exam_backup.db
 
 恢复服务正常运行
 ```bash
-mv /etc/kubernetes/manifests.bak /etc/kubernetes/manifests
+root@k8s-master:~# mv /etc/kubernetes/manifests.bak /etc/kubernetes/manifests
 
-systemctl restart kubelet.service
+root@k8s-master:~# systemctl restart kubelet.service
 
-root@cka-master:~# kubectl get nodes
+root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-cka-master    Ready                         control-plane   11h   v1.28.2
-cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.28.2
-cka-worker2   Ready                         worker          11h   v1.28.2
+k8s-master    Ready                         control-plane   11h   v1.29.0
+k8s-woker1   NotReady,SchedulingDisabled   worker          11h   v1.29.0
+k8s-woker2   Ready                         worker          11h   v1.29.0
 ```
 # Q2: RBAC
 
@@ -137,25 +137,25 @@ Q2中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 创建新的clusterrole，并使其具有相应的权限
 ```bash
-root@cka-master:~# kubectl create clusterrole deployment-clusterrole \
+root@k8s-master:~# kubectl create clusterrole deployment-clusterrole \
 --verb=create \
 --resource=deployments,statefulsets,daemonsets
 ```
 创建服务账号
 ```bash
-root@cka-master:~# kubectl -n app-team1 create serviceaccount cicd-token
+root@k8s-master:~# kubectl -n app-team1 create serviceaccount cicd-token
 ```
 将服务账号和集群角色绑定
 ```bash
-root@cka-master:~# kubectl -n app-team1 create rolebinding bind-cicd-token \
+root@k8s-master:~# kubectl -n app-team1 create rolebinding bind-cicd-token \
 --clusterrole=deployment-clusterrole \
 --serviceaccount=app-team1:cicd-token
 
-root@cka-master:~# kubectl -n app-team1 describe rolebindings.rbac.authorization.k8s.io bind-cicd-token
+root@k8s-master:~# kubectl -n app-team1 describe rolebindings.rbac.authorization.k8s.io bind-cicd-token
 Name:         bind-cicd-token
 Labels:       <none>
 Annotations:  <none>
@@ -170,47 +170,47 @@ Subjects:
 验证服务账号权限,经过验证，可以创建deployments，但是不能创建secret
 
 ```bash
-root@cka-master:~# kubectl -n app-team1 auth can-i create deployments --as system:serviceaccount:app-team1:cicd-token
+root@k8s-master:~# kubectl -n app-team1 auth can-i create deployments --as system:serviceaccount:app-team1:cicd-token
 yes
-root@cka-master:~# kubectl -n app-team1 auth can-i create secret --as system:serviceaccount:app-team1:cicd-token
+root@k8s-master:~# kubectl -n app-team1 auth can-i create secret --as system:serviceaccount:app-team1:cicd-token
 no
 ```
 
 # Q3: Node Maintenance
 
-Set the node named cka-master as unavailiable and reschedule all the pods running on it
+Set the node named k8s-master as unavailiable and reschedule all the pods running on it
 
 ---
 
 Q3 中文题目：
 
-将cka-master节点设置为不可用，然后重新调度该节点上的所有Pod
+将k8s-master节点设置为不可用，然后重新调度该节点上的所有Pod
 
 ---
 
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 禁用新的调度
 ```bash
-root@cka-master:~# kubectl cordon cka-master
+root@k8s-master:~# kubectl cordon k8s-master
 
-root@cka-master:~# kubectl get nodes
+root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-cka-master    Ready,SchedulingDisabled      control-plane   11h   v1.28.2
-cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.28.2
-cka-worker2   Ready                         worker          11h   v1.28.2
+k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.29.0
+k8s-woker1   NotReady,SchedulingDisabled   worker          11h   v1.29.0
+k8s-woker2   Ready                         worker          11h   v1.29.0
 ```
 将现有工作负载驱赶到其他节点
 ```bash
-root@cka-master:~# kubectl drain cka-master --delete-emptydir-data --ignore-daemonsets
+root@k8s-master:~# kubectl drain k8s-master --delete-emptydir-data --ignore-daemonsets
 ```
 
 # Q4: Upgrading kubeadm clusters
 
-Given an existing kubernetes cluster running version 1.28.2,upgrade all of the Kubernetes control plane and node components on the master node only to version 1.28.3,Please do not upgrade etcd database.
+Given an existing kubernetes cluster running version 1.29.0,upgrade all of the Kubernetes control plane and node components on the master node only to version 1.29.1-1.1,Please do not upgrade etcd database.
 
 You are also expected to upgrade kubelete and kubectl on the master node.
 
@@ -218,106 +218,106 @@ You are also expected to upgrade kubelete and kubectl on the master node.
 
 Q4 中文题目：
 
-现有的 Kubernetes 集群正在运行的版本是 1.28.2，仅将主节点上的所有 kubernetes 控制面板和组件升级到版本 1.28.3，请勿升级etcd数据库， 另外，在主节点上升级 kubelet 和 kubectl
+现有的 Kubernetes 集群正在运行的版本是 1.29.0，仅将主节点上的所有 kubernetes 控制面板和组件升级到版本 1.29.0-1.1，请勿升级etcd数据库， 另外，在主节点上升级 kubelet 和 kubectl
 
 ---
 
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 
 查询现有集群版本和软件版本
 ```bash
-root@cka-master:~# kubectl get nodes
+root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-cka-master    Ready,SchedulingDisabled      control-plane   11h   v1.28.2
-cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.28.2
-cka-worker2   Ready                         worker          11h   v1.28.2
+k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.29.0
+k8s-woker1   NotReady,SchedulingDisabled   worker          11h   v1.29.0
+k8s-woker2   Ready                         worker          11h   v1.29.0
 
-root@cka-master:~# kubelet --version
-Kubernetes v1.28.2
+root@k8s-master:~# kubelet --version
+Kubernetes v1.29.0
 
-root@cka-master:~# kubectl version
-Client Version: version.Info{Major:"1", Minor:"28", GitVersion:"v1.28.2"}
-Server Version: version.Info{Major:"1", Minor:"28", GitVersion:"v1.28.2"}
+root@k8s-master:~# kubectl version
+Client Version: version.Info {Major:"1", Minor:"29", GitVersion:"v1.29.0"}
+Server Version: version.Info {Major:"1", Minor:"29", GitVersion:"v1.29.0"}
 
-root@cka-master:~# kubeadm version
-kubeadm version: &version.Info{Major:"1", Minor:"28", GitVersion:"v1.28.2"}
+root@k8s-master:~# kubeadm version
+kubeadm version: &version.Info {Major:"1", Minor:"29", GitVersion:"v1.29.0"}
 ```
 禁用新的调度
 ```bash
-root@cka-master:~# kubectl cordon cka-master
+root@k8s-master:~# kubectl cordon k8s-master
 ```
 将现有工作负载驱赶到其他节点
 ```bash
-root@cka-master:~# kubectl drain cka-master --delete-emptydir-data --ignore-daemonsets
+root@k8s-master:~# kubectl drain k8s-master --delete-emptydir-data --ignore-daemonsets
 ```
 安装指定版本的kubeadm
 ```bash
-root@cka-master:~# apt-mark unhold kubeadm
-root@cka-master:~# apt update
-root@cka-master:~# apt install kubeadm=1.28.3-1.1 -y
+root@k8s-master:~# apt-mark unhold kubeadm
+root@k8s-master:~# apt update
+root@k8s-master:~# apt install kubeadm=1.29.1-1.1 -y
 Reading package lists... Done
-Setting up kubeadm (1.28.3-1.1)
+Setting up kubeadm (1.29.1-1.1)
 ...
-root@cka-master:~# apt-mark hold kubeadm
+root@k8s-master:~# apt-mark hold kubeadm
 
-root@cka-master:~# kubeadm version
-kubeadm version: &version.Info{Major:"1", Minor:"28", GitVersion:"v1.28.3"}
+root@k8s-master:~# kubeadm version
+kubeadm version: &version.Info {Major:"1", Minor:"29", GitVersion:"v1.29.1"}
 ```
 查询现有可升级的版本
 ```bash
-root@cka-master:~# kubeadm upgrade plan
+root@k8s-master:~# kubeadm upgrade plan
 ...
 You can now apply the upgrade by executing the following command:
 
-        kubeadm upgrade apply v1.28.3
+        kubeadm upgrade apply v1.29.1
 ```
 完成版本升级，记得指定不升级etcd的参数
 ```bash
-root@cka-master:~# apt-mark unhold kubeadm
-root@cka-master:~# kubeadm upgrade apply v1.28.3 --etcd-upgrade=false
+root@k8s-master:~# apt-mark unhold kubeadm
+root@k8s-master:~# kubeadm upgrade apply v1.29.1 --etcd-upgrade=false
 ...
 [upgrade] Are you sure you want to proceed? [y/N]: y
 ...
-[upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.28.3". Enjoy!
+[upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.29.1". Enjoy!
 
 [upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
 ```
 升级完成后，把kubelet、kubectl升级到指定版本
 
 ```bash
-root@cka-master:~# apt-mark unhold kubelet
-root@cka-master:~# apt-mark unhold kubectl
-root@cka-master:~# apt install kubelet=1.28.3-00 kubectl=1.28.3-00 -y
+root@k8s-master:~# apt-mark unhold kubelet
+root@k8s-master:~# apt-mark unhold kubectl
+root@k8s-master:~# apt install kubelet=1.29.1-1.1 kubectl=1.29.1-1.1 -y
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
-root@cka-master:~# apt-mark hold kubelet
-root@cka-master:~# apt-mark hold kubectl
-root@cka-master:~# apt-mark hold kubeadm
+root@k8s-master:~# apt-mark hold kubelet
+root@k8s-master:~# apt-mark hold kubectl
+root@k8s-master:~# apt-mark hold kubeadm
 ```
 重启kuelet服务，并查询状态
 ```bash
-root@cka-master:~# systemctl daemon-reload
-root@cka-master:~# systemctl restart kubelet.service
-root@cka-master:~# kubectl get nodes
+root@k8s-master:~# systemctl daemon-reload
+root@k8s-master:~# systemctl restart kubelet.service
+root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-cka-master    Ready,SchedulingDisabled      control-plane   11h   v1.28.3
-cka-worker1   NotReady,SchedulingDisabled   worker          11h   v1.28.2
-cka-worker2   Ready                         worker          11h   v1.28.2
+k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.29.1
+k8s-woker1   NotReady,SchedulingDisabled   worker          11h   v1.29.0
+k8s-woker2   Ready                         worker          11h   v1.29.0
 ```
 这里要格外注意，正式考试的时候一定要对你刚升级的节点执行uncordon，不然本题不会得分
 但是我们的模拟考试为了照顾大家的计算机性能，没有额外部署节点，所以在我们模拟考试的时候，不要执行uncordon，不然本地模拟考试时会且只会损失1分
 ```bash
-root@cka-master:~# kubectl uncordon cka-master
-root@cka-master:~# kubectl get nodes
+root@k8s-master:~# kubectl uncordon k8s-master
+root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-cka-master    Ready                         control-plane   19m   v1.28.3
-cka-worker1   Ready                         worker          17m   v1.28.2
-cka-worker2   Ready                         worker          16m   v1.28.2
+k8s-master    Ready                         control-plane   19m   v1.29.1
+k8s-woker1   Ready                         worker          17m   v1.29.0
+k8s-woker2   Ready                         worker          16m   v1.29.0
 ```
 
 # Q5: Create NetworkPolicy
@@ -347,7 +347,7 @@ Q5 中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 
 创建networkpolicy
@@ -379,9 +379,9 @@ spec:
 创建并验证策略是否正确
 
 ```bash
-root@cka-master:~# kubectl create -f networkpolicy.yml 
+root@k8s-master:~# kubectl create -f networkpolicy.yml 
 
-root@cka-master:~# kubectl describe networkpolicies.networking.k8s.io -n internal allow-port-from-namespace
+root@k8s-master:~# kubectl describe networkpolicies.networking.k8s.io -n internal allow-port-from-namespace
 Name:         allow-port-from-namespace
 Namespace:    internal
 Created on:   2022-12-01 07:01:53 +0000 UTC
@@ -400,22 +400,22 @@ Spec:
 确认internal pod的IP地址
 
 ```bash
-root@cka-master:~# kubectl get pod -n internal -o wide
+root@k8s-master:~# kubectl get pod -n internal -o wide
 NAME         READY   STATUS    RESTARTS   AGE     IP             NODE          NOMINATED NODE   READINESS GATES
-internlpod   1/1     Running   0          5m21s   172.16.245.1   cka-worker2   <none>           <none>
+internlpod   1/1     Running   0          5m21s   172.16.245.1   k8s-woker2   <none>           <none>
 ```
 
 从宿主机上无法访问
 ```bash
-root@cka-master:~# curl 172.16.245.1
+root@k8s-master:~# curl 172.16.245.1
 ```
 从corp namespace中可以访问
 ```bash
-root@cka-master:~# kubectl get pod -n corp
+root@k8s-master:~# kubectl get pod -n corp
 NAME      READY   STATUS    RESTARTS   AGE
 corppod   1/1     Running   0          33m
 
-root@cka-master:~# kubectl exec -it -n corp corppod -- curl 172.16.245.1
+root@k8s-master:~# kubectl exec -it -n corp corppod -- curl 172.16.245.1
 
 <title>Welcome to nginx!</title>
 ```
@@ -438,13 +438,13 @@ Q6 中文题目:
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 
 编辑deployment，在容器下面添加端口，为了优化速度，镜像用了阿里云，考试用它指定的镜像
 
 ```bash
-root@cka-master:~# kubectl edit deployments.apps front-end
+root@k8s-master:~# kubectl edit deployments.apps front-end
 ...
 containers:
       - image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
@@ -459,18 +459,18 @@ containers:
 
 以NodePort方式暴露端口并验证
 ```bash
-root@cka-master:~# kubectl expose deployment front-end --name=front-end-svc --port=80 --target-port=80 --type=NodePort
+root@k8s-master:~# kubectl expose deployment front-end --name=front-end-svc --port=80 --target-port=80 --type=NodePort
 
-root@cka-master:~# kubectl get service
+root@k8s-master:~# kubectl get service
 NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
 front-end-svc   NodePort    10.104.139.137   <none>        80:32402/TCP   74s
 kubernetes      ClusterIP   10.96.0.1        <none>        443/TCP        13h
 
-root@cka-master:~# curl 10.104.139.137
+root@k8s-master:~# curl 10.104.139.137
 ...
 <title>Welcome to nginx!</title>
 
-root@cka-master:~# curl cka-worker2:32402
+root@k8s-master:~# curl k8s-woker2:32402
 ...
 <title>Welcome to nginx!</title>
 ```
@@ -503,7 +503,7 @@ Q7 中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 创建ingress
 ```bash
@@ -532,15 +532,15 @@ spec:
               number: 5678
 ```
 ```bash
-root@cka-master:~# kubectl create -f ingress.yml 
+root@k8s-master:~# kubectl create -f ingress.yml 
 ```
 验证是否可访问
 ```bash
-root@cka-master:~# kubectl get ingress -n ing-internal
+root@k8s-master:~# kubectl get ingress -n ing-internal
 NAME   CLASS   HOSTS   ADDRESS          PORTS   AGE
-pong   nginx   *       192.168.30.132   80      116s
+pong   nginx   *       192.168.8.5   80      116s
 
-root@cka-master:~# curl -kL 192.168.30.132/hi
+root@k8s-master:~# curl -kL 192.168.8.5/hi
 hi
 ```
 
@@ -559,14 +559,14 @@ Q8 中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 调整副本数为6并验证
 
 ```bash
-root@cka-master:~# kubectl scale deployment loadbalancer --replicas=6 --record
+root@k8s-master:~# kubectl scale deployment loadbalancer --replicas=6 --record
 
-root@cka-master:~# kubectl get deployments.apps loadbalancer
+root@k8s-master:~# kubectl get deployments.apps loadbalancer
 NAME           READY   UP-TO-DATE   AVAILABLE   AGE
 loadbalancer   6/6     6            6           43m
 ```
@@ -592,7 +592,7 @@ Q9 中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 创建pod，为了优化速度，镜像用了阿里云，考试用它指定的镜像
 
@@ -618,17 +618,17 @@ kubectl create -f assignpod.yml
 ```
 验证nodes标签
 ```bash
-root@cka-master:~# kubectl get nodes --show-labels
+root@k8s-master:~# kubectl get nodes --show-labels
 NAME          STATUS     ROLES           AGE   VERSION   LABELS
-cka-master    Ready      control-plane   14h   v1.28.3   ...
-cka-worker1   NotReady   worker          14h   v1.28.2   ...
-cka-worker2   Ready      worker          14h   v1.28.2   disk=spinning
+k8s-master    Ready      control-plane   14h   v1.29.1   ...
+k8s-woker1   NotReady   worker          14h   v1.29.0   ...
+k8s-woker2   Ready      worker          14h   v1.29.0   disk=spinning
 ```
 查询pod是否如期调度
 ```bash
-root@cka-master:~# kubectl get pod -o wide
+root@k8s-master:~# kubectl get pod -o wide
 NAME                                      READY   STATUS    RESTARTS   AGE    IP              NODE          NOMINATED NODE   READINESS GATES
-nginx-kusc00401                           1/1     Running   0          22s    172.16.245.18   cka-worker2   <none>           <none>
+nginx-kusc00401                           1/1     Running   0          22s    172.16.245.18   k8s-woker2   <none>           <none>
 ```
 
 # Q10: Find how many health node
@@ -646,18 +646,18 @@ Q10 中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 查询出不包含noschedule和unreachable的节点数量
 
 ```bash
-root@cka-master:~# kubectl describe node | grep -i taints|grep -v -i -e noschedule -e unreachable | wc -l
+root@k8s-master:~# kubectl describe node | grep -i taints|grep -v -i -e noschedule -e unreachable | wc -l
 1
 ```
 以你实际情况为准
 ```bash
-root@cka-master:~# echo 1 > /opt/kusc00402.txt
-root@cka-master:~# cat /opt/kusc00402.txt
+root@k8s-master:~# echo 1 > /opt/kusc00402.txt
+root@k8s-master:~# cat /opt/kusc00402.txt
 1
 ```
 
@@ -676,7 +676,7 @@ Q11 中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 创建kucc1 pod，为了优化速度，镜像用了阿里云，考试用它指定的镜像
 ```bash
@@ -700,11 +700,11 @@ spec:
 ```
 
 ```bash
-root@cka-master:~# kubectl create -f multipod.yml 
+root@k8s-master:~# kubectl create -f multipod.yml 
 ```
 验证是否是4/4 running
 ```bash
-root@cka-master:~# kubectl get -f multipod.yml 
+root@k8s-master:~# kubectl get -f multipod.yml 
 NAME    READY   STATUS    RESTARTS   AGE
 kucc1   4/4     Running   0          2m3s
 ```
@@ -724,7 +724,7 @@ Q12 中文题目:
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 创建PV
 
@@ -747,9 +747,9 @@ spec:
 ```
 
 ```bash
-root@cka-master:~# kubectl create -f pv.yml 
+root@k8s-master:~# kubectl create -f pv.yml 
 
-root@cka-master:~# kubectl get -f pv.yml 
+root@k8s-master:~# kubectl get -f pv.yml 
 NAME         CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE
 app-config   2Gi        RWO            Retain           Available                                   2m
 ```
@@ -788,7 +788,7 @@ Q13 中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 创建PVC，注意storageClassName
 
@@ -811,7 +811,7 @@ spec:
 ```
 
 ```bash
-root@cka-master:~# kubectl create -f pvc.yml 
+root@k8s-master:~# kubectl create -f pvc.yml 
 ```
 创建pod来使用pvc，为了优化速度，镜像用了阿里云，考试用它指定的镜像
 
@@ -838,9 +838,9 @@ spec:
 ```
 
 ```bash
-root@cka-master:~# kubectl create -f pod.yml 
+root@k8s-master:~# kubectl create -f pod.yml 
 
-root@cka-master:~# kubectl get pod web-server
+root@k8s-master:~# kubectl get pod web-server
 NAME         READY   STATUS    RESTARTS   AGE
 web-server   1/1     Running   0          31s
 ```
@@ -850,7 +850,7 @@ web-server   1/1     Running   0          31s
 确认存储类是否允许扩容，注意下面的ALLOWVOLUMEEXPANSION参数是否为true
 
 ```bash
-root@cka-master:~# kubectl get storageclasses csi-hostpath-sc
+root@k8s-master:~# kubectl get storageclasses csi-hostpath-sc
 NAME                        PROVISIONER         RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
 csi-hostpath-sc (default)   cnlxh/nfs-storage   Delete          Immediate           true                   51m
 ```
@@ -867,11 +867,11 @@ allowVolumeExpansion: true
 ```
 第一种方法，模拟环境中由于NFS特性，不支持扩容，考试中可以的
 ```bash
-root@cka-master:~# kubectl patch pvc pv-volume  -p '{"spec":{"resources":{"requests":{"storage": "70Mi"}}}}' --record
+root@k8s-master:~# kubectl patch pvc pv-volume  -p '{"spec":{"resources":{"requests":{"storage": "70Mi"}}}}' --record
 ```
 第二种方法，模拟环境中由于NFS特性，不支持扩容，考试中可以的
 ```bash
-root@cka-master:~# kubectl  edit pvc pv-volume --record=true
+root@k8s-master:~# kubectl edit pvc pv-volume --record=true
 ...
 spec:
   accessModes:
@@ -900,11 +900,11 @@ Q14 中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 
 ```bash
-root@cka-master:~# kubectl logs foobar  |grep unable-to-access-website > /opt/foobar.txt
+root@k8s-master:~# kubectl logs foobar  |grep unable-to-access-website > /opt/foobar.txt
 ```
 
 # Q15: Add sidecar container
@@ -938,12 +938,12 @@ Q15 中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 导出现有容器yaml
 
 ```bash
-root@cka-master:~# kubectl get pod legacy-app -o yaml > sidecar.yaml
+root@k8s-master:~# kubectl get pod legacy-app -o yaml > sidecar.yaml
 ```
 修改导出的yaml文件，在现有容器上添加volumeMounts参数来挂载logs到/var/log，并添加新容器同样挂载这个位置，不要忘了创建出logs卷，为了优化速度，镜像用了阿里云，考试用它指定的镜像
 ```bash
@@ -981,9 +981,9 @@ spec:
 pod不支持直接修改，确认没问题之后，直接删除原有pod并重建
 
 ```bash
-root@cka-master:~# kubectl delete pod legacy-app
-root@cka-master:~# kubectl create -f sidecar.yaml
-root@cka-master:~# kubectl get pod legacy-app
+root@k8s-master:~# kubectl delete pod legacy-app
+root@k8s-master:~# kubectl create -f sidecar.yaml
+root@k8s-master:~# kubectl get pod legacy-app
 NAME         READY   STATUS    RESTARTS      AGE
 legacy-app   2/2     Running      0         2m7s
 
@@ -1004,27 +1004,27 @@ Q16 中文题目：
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 考试时直接用top pod来看谁的CPU用的更高，填写即可，用肉眼分析也可以的
 
 ```bash
-root@cka-master:~# kubectl top pod -l name=cpu-user -A --sort-by cpu
+root@k8s-master:~# kubectl top pod -l name=cpu-user -A --sort-by cpu
 NAMESPACE   NAME   CPU(cores)   MEMORY(bytes)
 default     foobar    1m           5Mi
 
-root@cka-master:~# echo 'foobar' > /opt/findhighcpu.txt
+root@k8s-master:~# echo 'foobar' > /opt/findhighcpu.txt
 ```
 
 # Q17: Fixing kubernetes node state
 
-A kubernetes worker node, named CKA-Worker1 is in state NotReady. Investigate why this is the case, and perform any appropriate steps to bring the node to a Ready state,ensuring that any changes are made permanent.
+A kubernetes worker node, named k8s-woker1 is in state NotReady. Investigate why this is the case, and perform any appropriate steps to bring the node to a Ready state,ensuring that any changes are made permanent.
 
 Tips:
 
 1、you can ssh to the failed node using:
 
-ssh CKA-Worker1
+ssh k8s-woker1
 
 2、you can assume elevated privileges on the node with the following command：
 
@@ -1034,26 +1034,26 @@ sudo  -i
 
 Q17 中文题目：
 
-一个名为CKA-Worker1的节点状态为NotReady，让其恢复至正常状态，并确认所有的更改重新开机依旧有效
+一个名为k8s-woker1的节点状态为NotReady，让其恢复至正常状态，并确认所有的更改重新开机依旧有效
 
 ---
 
 切换集群，考试时基本每道题都需要切换context集群，一定不要忘了复制它给的切换命令并执行
 
 ```bash
-root@cka-master:~# kubectl config use-context kubernetes-admin@kubernetes
+root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
-发现cka-worker1节点是NotReady
+发现k8s-woker1节点是NotReady
 ```bash
-root@cka-master:~# kubectl get nodes
+root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE    VERSION
-cka-master    Ready,SchedulingDisabled      control-plane   2d1h   v1.28.3
-cka-worker1   NotReady,SchedulingDisabled   worker          2d1h   v1.28.2
-cka-worker2   Ready                         worker          2d1h   v1.28.2
+k8s-master    Ready,SchedulingDisabled      control-plane   2d1h   v1.29.1
+k8s-woker1   NotReady,SchedulingDisabled   worker          2d1h   v1.29.0
+k8s-woker2   Ready                         worker          2d1h   v1.29.0
 ```
 描述一下节点，看看事件，发现kubelet服务停止了
 ```bash
-root@cka-master:~# kubectl describe nodes cka-worker1
+root@k8s-master:~# kubectl describe nodes k8s-woker1
 ...
 Conditions:
   Type                 Reason                       Message
@@ -1067,22 +1067,22 @@ Conditions:
 ```
 一般kubelet服务不启动，也有可能的runtime的问题，顺便查询docker服务，发现也没启动
 ```bash
-root@cka-worker1:~# systemctl status docker
+root@k8s-woker1:~# systemctl status docker
 ● docker.service - Docker Application Container Engine
      Loaded: loaded (/lib/systemd/system/docker.service; disabled; vendor preset: enabled)
      Active: inactive (dead) since Tue 2022-12-06 14:08:47 UTC; 1s ago
 ```
 修复两个服务状态，记得enable
 ```bash
-root@cka-master:~# ssh root@cka-worker1
-root@cka-worker1:~# systemctl start docker 
-root@cka-worker1:~# systemctl start kubelet 
-root@cka-worker1:~# systemctl enable kubelet docker
+root@k8s-master:~# ssh root@k8s-woker1
+root@k8s-woker1:~# systemctl start docker 
+root@k8s-woker1:~# systemctl start kubelet 
+root@k8s-woker1:~# systemctl enable kubelet docker
 ```
 **另外请注意，有同学反馈考试时有遇到runtime不是docker，而是containerd的情况，所以考试时，灵活一些，看看到底是docker还是containerd，具体可以docker images看看是否有考试过程中的镜像，或者以下方式查询：**
 
 ```bash
-root@cka-master:~# kubectl describe nodes cka-worker1 | grep -A 10 'System Info'
+root@k8s-master:~# kubectl describe nodes k8s-woker1 | grep -A 10 'System Info'
 System Info:
   Machine ID:                 77b031532486421d9571f82739654f48
   System UUID:                2dff4d56-861e-193b-d91f-a975eb9f0d12
@@ -1092,8 +1092,8 @@ System Info:
   Operating System:           linux
   Architecture:               amd64
   Container Runtime Version:  docker://23.0.1
-  Kubelet Version:            v1.28.3
-  Kube-Proxy Version:         v1.28.3
+  Kubelet Version:            v1.29.1
+  Kube-Proxy Version:         v1.29.1
 ```
 
 Container Runtime Version:  docker://23.0.1
