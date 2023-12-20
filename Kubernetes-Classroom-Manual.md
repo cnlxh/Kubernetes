@@ -8,22 +8,15 @@
 联系邮箱: 939958092@qq.com
 ```
 
-| 版本编号 | 版本日期       | 修改者 | 说明                      | 备注  |
-| ---- | ---------- | --- | ----------------------- | --- |
-| 1.0  | 2022-01-14 | 李晓辉 | 初始创建，基于Kubernetes v1.23 |     |
-| 2.0  | 2022-05-12 | 李晓辉 | 修订细节，更新版本至v1.24         |     |
-| 3.0  | 2022-10-15 | 李晓辉 | 修订细节，更新版本至v1.25         |     |
-| 4.0  | 2023-1-6 | 李晓辉 | 修订细节，更新版本至v1.26         |     |
-
 [TOC]
 
 # 准备DNS解析
 
 ```bash
 cat >> /etc/hosts <<EOF
-192.168.30.130 cka-master
-192.168.30.131 cka-worker1
-192.168.30.132 cka-worker2
+192.168.8.3 k8s-master
+192.168.8.4 k8s-worker1
+192.168.8.5 k8s-worker2
 192.168.30.133 registry.xiaohui.cn
 EOF
 ```
@@ -83,8 +76,8 @@ http://hub-mirror.c.163.com/
 
 ## CRI-Docker 部署
 ```bash
-wget https://ghproxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.1/cri-dockerd_0.3.1.3-0.ubuntu-focal_amd64.deb
-dpkg -i cri-dockerd_0.3.1.3-0.ubuntu-focal_amd64.deb
+wget https://mirror.ghproxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.8/cri-dockerd_0.3.8.3-0.ubuntu-jammy_amd64.deb
+dpkg -i cri-dockerd_0.3.8.3-0.ubuntu-jammy_amd64.deb
 
 sed -i 's/ExecStart=.*/ExecStart=\/usr\/bin\/cri-dockerd --container-runtime-endpoint fd:\/\/ --network-plugin=cni --pod-infra-container-image=registry.cn-hangzhou.aliyuncs.com\/google_containers\/pause:3.8/' /lib/systemd/system/cri-docker.service
 systemctl daemon-reload
@@ -533,8 +526,8 @@ crictl images
 
 ```bash
 kubeadm config print init-defaults > kubeadm.yaml
-sed -i 's/.*advert.*/  advertiseAddress: 192.168.30.130/g' kubeadm.yaml
-sed -i 's/.*name.*/  name: cka-master/g' kubeadm.yaml
+sed -i 's/.*advert.*/  advertiseAddress: 192.168.8.3/g' kubeadm.yaml
+sed -i 's/.*name.*/  name: k8s-master/g' kubeadm.yaml
 sed -i 's/imageRepo.*/imageRepository: registry.cn-hangzhou.aliyuncs.com\/google_containers/g' kubeadm.yaml
 # 注意下面的替换，只有在集成的是CRI-Docker时才需要执行，而Containerd就不需要
 sed -i 's/  criSocket.*/  criSocket: unix:\/\/\/run\/cri-dockerd.sock/' kubeadm.yaml
@@ -550,7 +543,7 @@ kubeadm init --config kubeadm.yaml
 ```bash
 Your Kubernetes control-plane has initialized successfully!
 ...
-kubeadm join 192.168.30.130:6443 --token abcdef.0123456789abcdef \
+kubeadm join 192.168.8.3:6443 --token abcdef.0123456789abcdef \
     --discovery-token-ca-cert-hash sha256:d0edd579cbefc3baee6c2253561e24261300ede214ae172bf9687404e09104bf 
 ```
 
@@ -605,15 +598,15 @@ kubeadm token create --print-join-command
 加入节点时，指定CRI对象，案例如下：
 
 ```bash
-kubeadm join 192.168.30.130:6443 --token m0uywc.81wx2xlrzzfe4he0 \
+kubeadm join 192.168.8.3:6443 --token m0uywc.81wx2xlrzzfe4he0 \
 --discovery-token-ca-cert-hash sha256:5a24296d9c8f5ace4dede7ed46ee2ecf5ed51c0877e5c1650fe2204c09458274 \
 --cri-socket=unix:///var/run/cri-dockerd.sock
 ```
 
-在cka-master机器上执行以下内容给节点打上角色标签，cka-worker1 cka-worker2打上了worker标签
+在k8s-master机器上执行以下内容给节点打上角色标签，k8s-worker1 k8s-worker2打上了worker标签
 
 ```bash
-kubectl label nodes cka-worker1 cka-worker2 node-role.kubernetes.io/worker=
+kubectl label nodes k8s-worker1 k8s-worker2 node-role.kubernetes.io/worker=
 kubectl get nodes
 ```
 
@@ -722,7 +715,7 @@ kubectl get -f multicontainer.yml -o wide
 NAME   READY   STATUS    RESTARTS   AGE   IP               NODE         NOMINATED NODE   READINESS GATES
 pod    2/2     Running   0          66s   172.16.200.199   host1   <none>           <none>
 
-root@cka-master:~# curl 172.16.200.199
+root@k8s-master:~# curl 172.16.200.199
 <html><body><h1>It works!</h1></body></html>
 ```
 
@@ -815,7 +808,7 @@ EOF
 kubectl create -f sidecar.yml 
 kubectl get -f sidecar.yml -o wide
 NAME         READY   STATUS    RESTARTS   AGE     IP             NODE          NOMINATED NODE   READINESS GATES
-sidecarpod   2/2     Running   0          3m54s   172.17.245.1   cka-worker2   <none>           <none>
+sidecarpod   2/2     Running   0          3m54s   172.17.245.1   k8s-worker2   <none>           <none>
 
 curl http://172.17.245.1
 Hello sidecar
@@ -924,9 +917,9 @@ NAME                          DESIRED   CURRENT   READY   AGE    CONTAINERS   IM
 replicaset.apps/nginxrstest   3         3         3       2m4s   nginx        nginx    app=nginxrstest
 
 NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE                    NOMINATED NODE   READINESS GATES
-pod/nginxrstest-chtkc   1/1     Running   0          62s   172.17.93.196   cka-worker1             <none>           <none>
-pod/nginxrstest-scvhv   1/1     Running   0          62s   172.17.245.4    cka-worker2             <none>           <none>
-pod/nginxrstest-zqllq   1/1     Running   0          62s   172.17.193.2    cka-master              <none>           <none>
+pod/nginxrstest-chtkc   1/1     Running   0          62s   172.17.93.196   k8s-worker1             <none>           <none>
+pod/nginxrstest-scvhv   1/1     Running   0          62s   172.17.245.4    k8s-worker2             <none>           <none>
+pod/nginxrstest-zqllq   1/1     Running   0          62s   172.17.193.2    k8s-master              <none>           <none>
 
 curl http://172.17.93.196
 ...
@@ -1218,7 +1211,7 @@ EOF
 ```
 
 ```bash
-root@cka-master:~# kubectl get jobs,pods
+root@k8s-master:~# kubectl get jobs,pods
 NAME           COMPLETIONS   DURATION   AGE
 job.batch/pi   0/1           82s        82s
 
@@ -1325,10 +1318,10 @@ service/kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP          2
 service/lxhservice   NodePort    10.96.213.26   <none>        9000:31919/TCP   28s
 
 NAME                   ENDPOINTS                                                        AGE
-endpoints/kubernetes   192.168.30.130:6443                                              27m
+endpoints/kubernetes   192.168.8.3:6443                                              27m
 endpoints/lxhservice   172.16.152.69:80,172.16.152.72:80,172.16.152.73:80 + 8 more...   28s
 
-root@cka-master:~# curl http://192.168.30.130:31919
+root@k8s-master:~# curl http://192.168.8.3:31919
 ...
 <title>Welcome to nginx!</title>
 ```
@@ -1363,7 +1356,7 @@ kubectl get service
 NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
 my-service   ClusterIP   10.102.224.203   <none>        8000/TCP   88s
 
-root@cka-master:~# curl http://10.102.224.203:8000
+root@k8s-master:~# curl http://10.102.224.203:8000
 ...
 <title>Welcome to nginx!</title>
 ```
@@ -1402,7 +1395,7 @@ NAME          TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
 nodeservice   NodePort   10.100.234.83   <none>        8000:31788/TCP   11s
 
 # 因为是nodeport，所以用节点IP
-curl http://192.168.30.130:31788
+curl http://192.168.8.3:31788
 ...
 <title>Welcome to nginx!</title>
 ```
@@ -1545,11 +1538,11 @@ NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
 ingressservice   ClusterIP   10.110.117.37   <none>        80/TCP    2m7
 
 NAME        CLASS   HOSTS               ADDRESS                         PORTS   AGE
-lixiaohui   nginx   www.lixiaohui.com   192.168.30.131,192.168.30.132   80      2m26s
+lixiaohui   nginx   www.lixiaohui.com   192.168.8.4,192.168.8.5   80      2m26s
 
 把上述ADDRESS部分的IP和域名绑定解析
 
-echo 192.168.30.131 www.lixiaohui.com >> /etc/hosts
+echo 192.168.8.4 www.lixiaohui.com >> /etc/hosts
 
 curl http://www.lixiaohui.com
 ```
@@ -1612,7 +1605,7 @@ kubectl describe pod liveness-exec
 Events:
   Type     Reason     Age                  From               Message
   ----     ------     ----                 ----               -------
-  Normal   Scheduled  3m16s                default-scheduler  Successfully assigned lixiaohui/liveness-exec to cka-worker1
+  Normal   Scheduled  3m16s                default-scheduler  Successfully assigned lixiaohui/liveness-exec to k8s-worker1
   Normal   Pulled     3m11s                kubelet            Successfully pulled image "busybox" in 3.821847462s
   Normal   Pulled     117s                 kubelet            Successfully pulled image "busybox" in 3.615149362s
   Normal   Pulling    45s (x3 over 3m15s)  kubelet            Pulling image "busybox"
@@ -1677,7 +1670,7 @@ kubectl describe pod http
 Events:
   Type     Reason     Age                    From               Message
   ----     ------     ----                   ----               -------
-  Normal   Scheduled  3m28s                  default-scheduler  Successfully assigned lixiaohui/http to cka-worker1
+  Normal   Scheduled  3m28s                  default-scheduler  Successfully assigned lixiaohui/http to k8s-worker1
   Normal   Pulled     3m23s                  kubelet            Successfully pulled image "httpd" in 4.365187879s
   Normal   Pulled     3m9s                   kubelet            Successfully pulled image "httpd" in 2.794325055s
   Normal   Created    2m54s (x3 over 3m23s)  kubelet            Created container httpd
@@ -1739,7 +1732,7 @@ kubectl describe pod tcpcheck
 Events:
   Type     Reason     Age               From               Message
   ----     ------     ----              ----               -------
-  Normal   Scheduled  60s               default-scheduler  Successfully assigned lixiaohui/tcpcheck to cka-worker1
+  Normal   Scheduled  60s               default-scheduler  Successfully assigned lixiaohui/tcpcheck to k8s-worker1
   Normal   Pulling    60s               kubelet            Pulling image "httpd"
   Normal   Pulled     57s               kubelet            Successfully pulled image "httpd" in 2.730390747s
   Normal   Created    57s               kubelet            Created container httpd
@@ -2029,7 +2022,7 @@ spec:
     - nfsvers=4.1
   nfs:
     path: /nfsshare
-    server: 192.168.30.130
+    server: 192.168.8.3
 EOF
 ```
 
@@ -2143,7 +2136,7 @@ kubectl get -f pvcuse.yml -o wide
 NAME    READY   STATUS    RESTARTS   AGE   IP               NODE         NOMINATED NODE   READINESS GATES
 mypod   1/1     Running   0          8s    172.16.200.225   cka-worker02   <none>           <none>
 
-# 在NFS服务器上(192.168.30.130)创建出index.html网页
+# 在NFS服务器上(192.168.8.3)创建出index.html网页
 
 echo pvctest > /nfsshare/index.html
 
@@ -2253,10 +2246,10 @@ kubectl delete -f deploy/test-pod.yaml -f deploy/test-claim.yaml
 
 ## nodeSelector
 
-给cka-worker2节点打一个标签name=lixiaohui
+给k8s-worker2节点打一个标签name=lixiaohui
 
 ```bash
-kubectl label nodes cka-worker2 name=lixiaohui
+kubectl label nodes k8s-worker2 name=lixiaohui
 ```
 
 将pod仅调度到具有name=lixiaohui标签的节点上
@@ -2281,7 +2274,7 @@ EOF
 kubectl create -f assignpod.yml 
 kubectl get pod cnlxhtest -o wide
 NAME        READY   STATUS    RESTARTS   AGE   IP               NODE               NOMINATED NODE   READINESS GATES
-cnlxhtest   1/1     Running   0          10s   172.16.125.120   cka-worker2   <none>           <none>
+cnlxhtest   1/1     Running   0          10s   172.16.125.120   k8s-worker2   <none>           <none>
 ```
 
 ```bash
@@ -2290,7 +2283,7 @@ kubectl delete -f assignpod.yml
 
 ## nodeName
 
-将Pod仅调度到具有特定名称的节点上，例如仅调度到cka-worker1上
+将Pod仅调度到具有特定名称的节点上，例如仅调度到k8s-worker1上
 
 ```bash
 cat > nodename.yml <<EOF
@@ -2304,7 +2297,7 @@ spec:
     image: nginx
     imagePullPolicy: IfNotPresent
   nodeName:
-    cka-worker1
+    k8s-worker1
 EOF
 ```
 
@@ -2312,7 +2305,7 @@ EOF
 kubectl create -f nodename.yml 
 kubectl get pod lxhnodename -o wide
 NAME          READY   STATUS    RESTARTS   AGE   IP             NODE               NOMINATED NODE   READINESS GATES
-lxhnodename   1/1     Running   0          9s    172.16.127.5   cka-worker1   <none>           <none>
+lxhnodename   1/1     Running   0          9s    172.16.127.5   k8s-worker1   <none>           <none>
 ```
 
 ```bash
@@ -2324,7 +2317,7 @@ kubectl delete -f nodename.yml
 master节点默认不参与调度的原因就是因为其上有taint，而toleration就是容忍度
 
 ```bash
-kubectl describe nodes cka-master | grep -i taint
+kubectl describe nodes k8s-master | grep -i taint
 node-role.kubernetes.io/control-plane:NoSchedule
 ```
 
@@ -2352,10 +2345,10 @@ EOF
 kubectl create -f tolerations.yml 
 kubectl get pod tolerations -o wide
 NAME          READY   STATUS    RESTARTS   AGE   IP              NODE               NOMINATED NODE   READINESS GATES
-tolerations   1/1     Running   0          7s    172.16.125.65   cka-worker2   <none>           <none>
+tolerations   1/1     Running   0          7s    172.16.125.65   k8s-worker2   <none>           <none>
 ```
 
-此时我们发现，并没有调度到cka-master上，由此我们得出来一个结果，容忍不代表必须，如果必须要调度到cka-master，需要用以下例子
+此时我们发现，并没有调度到k8s-master上，由此我们得出来一个结果，容忍不代表必须，如果必须要调度到k8s-master，需要用以下例子
 
 ```bash
 cat > mustassign.yml <<EOF
@@ -2381,7 +2374,7 @@ EOF
 kubectl create -f mustassign.yml 
 kubectl get -f mustassign.yml -o wide
 NAME          READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES
-tolerations   1/1     Running   0          3s    172.16.119.16   cka-master   <none>           <none>
+tolerations   1/1     Running   0          3s    172.16.119.16   k8s-master   <none>           <none>
 ```
 
 ```bash
@@ -2525,7 +2518,7 @@ EOF
 kubectl create -f cmvolume.yml 
 kubectl get -f cmvolume.yml -o wide
 NAME              READY   STATUS    RESTARTS   AGE   IP               NODE         NOMINATED NODE   READINESS GATES
-configmapvolume   1/1     Running   0          63s   172.16.200.237   cka-worker1 <none>           <none>
+configmapvolume   1/1     Running   0          63s   172.16.200.237   k8s-worker1 <none>           <none>
 
 curl http://172.16.200.237
 hello world
@@ -3025,7 +3018,7 @@ EOF
 kubectl create -f nppod.yml
 kubectl get pod -n zhangsan  -o wide
 NAME   READY   STATUS    RESTARTS   AGE   IP              NODE               NOMINATED NODE   READINESS GATES
-pod    1/1     Running   0          83s   172.16.152.73   cka-worker2        <none>           <none>
+pod    1/1     Running   0          83s   172.16.152.73   k8s-worker2        <none>           <none>
 ```
 
 在lixiaohui的namespace中，新建一个pod
@@ -3054,7 +3047,7 @@ EOF
 kubectl create -f nppod1.yml
 kubectl get pod -n lixiaohui -o wide
 NAME   READY   STATUS    RESTARTS   AGE   IP              NODE               NOMINATED NODE   READINESS GATES
-pod1   1/1     Running   0          14s   172.16.152.74   cka-worker2          <none>           <none>
+pod1   1/1     Running   0          14s   172.16.152.74   k8s-worker2          <none>           <none>
 ```
 
 新建网络策略
@@ -3165,9 +3158,9 @@ kubectl apply -f https://gitee.com/cnlxh/Kubernetes/raw/master/cka-yaml/metrics-
 ```bash
 kubectl top nodes
 NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
-cka-master              142m         3%     1725Mi          45%       
-cka-worker1             150m         3%     1024Mi          27%       
-cka-worker2             53m          1%     995Mi           26%       
+k8s-master              142m         3%     1725Mi          45%       
+k8s-worker1             150m         3%     1024Mi          27%       
+k8s-worker2             53m          1%     995Mi           26%       
 
 kubectl top pod
 NAME                               CPU(cores)   MEMORY(bytes)   
@@ -3244,14 +3237,14 @@ kubectl apply -f manifests/
 
 ```bash
 kubectl get pod -n monitoring -o wide | grep grafana
-grafana-67b774cb88-4kf9c ... cka-worker1
+grafana-67b774cb88-4kf9c ... k8s-worker1
 
 kubectl get service -n monitoring grafana
 NAME      TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
 grafana   NodePort   10.99.168.64   <none>        3000:32000/TCP   30m
 ```
 
-配置好解析后，在浏览器中打开http://cka-worker1:32000，或者不配置解析用IP也可以
+配置好解析后，在浏览器中打开http://k8s-worker1:32000，或者不配置解析用IP也可以
 
 用户名和密码都是admin，点击login之后会让你修改新密码，进行修改后点击submit或直接点击skip不修改
 
@@ -3295,20 +3288,20 @@ kubeadm/kubernetes-xenial 1.26.6-00 amd64
 禁止Master节点接收新调度
 
 ```bash
-kubectl cordon cka-master
+kubectl cordon k8s-master
 kubectl get nodes
 NAME                    STATUS                     ROLES           AGE     VERSION
-cka-master              Ready,SchedulingDisabled   control-plane   7h38m   v1.27.2
-cka-worker1             Ready                      worker          7h2m    v1.27.2
-cka-worker2             Ready                      worker          7h2m    v1.27.2
+k8s-master              Ready,SchedulingDisabled   control-plane   7h38m   v1.27.2
+k8s-worker1             Ready                      worker          7h2m    v1.27.2
+k8s-worker2             Ready                      worker          7h2m    v1.27.2
 ```
 
 驱逐Master节点上的现有任务
 
 ```bash
-kubectl drain cka-master --ignore-daemonsets --delete-emptydir-data
+kubectl drain k8s-master --ignore-daemonsets --delete-emptydir-data
 
-node/cka-master already cordoned
+node/k8s-master already cordoned
 WARNING: ignoring DaemonSet-managed Pods: default/lixiaohui-mq4sp, kube-system/calico-node-xzhwb, kube-system/kube-proxy-8nnfn
 evicting pod kube-system/coredns-7f74c56694-nwqzc
 evicting pod default/nginx-deployment-66b957f9d-ph8d6
@@ -3342,12 +3335,12 @@ kubeadm upgrade apply v1.27.3  --etcd-upgrade=false
 
 ```bash
 systemctl restart kubelet
-kubectl uncordon cka-master
+kubectl uncordon k8s-master
 kubectl get nodes
 NAME                    STATUS   ROLES           AGE     VERSION
-cka-master              Ready    control-plane   7h48m   v1.27.3
-cka-worker1             Ready    worker          7h12m   v1.27.2
-cka-worker2             Ready    worker          7h12m   v1.27.2
+k8s-master              Ready    control-plane   7h48m   v1.27.3
+k8s-worker1             Ready    worker          7h12m   v1.27.2
+k8s-worker2             Ready    worker          7h12m   v1.27.2
 ```
 
 # Helm 部署实践
@@ -3420,17 +3413,17 @@ wordpress-mariadb   ClusterIP      10.106.8.85      <none>        3306/TCP      
 查询pod所在节点
 
 ```bash
-root@cka-master:~# kubectl get pod -o wide
+root@k8s-master:~# kubectl get pod -o wide
 NAME                                      READY   STATUS      RESTARTS   AGE    IP               NODE          NOMINATED NODE   READINESS GATES
-nfs-client-provisioner-598cf75b45-kflwb   1/1     Running     0          133m   172.16.200.248   cka-master    <none>           <none>
-pod-default                               0/1     Completed   0          82m    172.16.93.198    cka-worker1   <none>           <none>
-wordpress-78d6fd4d6b-jt4pp                1/1     Running     0          107s   172.16.93.201    cka-worker1   <none>           <none>
-wordpress-mariadb-0                       1/1     Running     0          107s   172.16.245.6     cka-worker2   <none>           <none>
+nfs-client-provisioner-598cf75b45-kflwb   1/1     Running     0          133m   172.16.200.248   k8s-master    <none>           <none>
+pod-default                               0/1     Completed   0          82m    172.16.93.198    k8s-worker1   <none>           <none>
+wordpress-78d6fd4d6b-jt4pp                1/1     Running     0          107s   172.16.93.201    k8s-worker1   <none>           <none>
+wordpress-mariadb-0                       1/1     Running     0          107s   172.16.245.6     k8s-worker2   <none>           <none>
 ```
-可以看到wordpress在cka-worker1上，直接打开浏览器，访问31194或30386端口都可以，例如:
+可以看到wordpress在k8s-worker1上，直接打开浏览器，访问31194或30386端口都可以，例如:
 
 ```bash
-http://cka-worker1:31194
+http://k8s-worker1:31194
 ```
 
 # ETCD 备份与恢复
@@ -3490,7 +3483,7 @@ kubectl get pod
 检查etcd是否健康
 
 ```bash
-ETCDCTL_API=3 etcdctl --endpoints=https://192.168.30.130:2379 \
+ETCDCTL_API=3 etcdctl --endpoints=https://192.168.8.3:2379 \
 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
 --cert=/etc/kubernetes/pki/etcd/server.crt \
 --key=/etc/kubernetes/pki/etcd/server.key endpoint health
