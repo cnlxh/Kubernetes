@@ -1,22 +1,22 @@
 #!/bin/bash
 echo "######################################################################################################
-#    Author：Xiaohui Li
+#    Author: Xiaohui Li
 #    Contact me via WeChat: Lxh_Chat
 #    Contact me via QQ: 939958092
-#    Version： 2022-03-01
+#    Version: 2022-03-01
 #
 #    Make sure you have a 3-node k8s cluster and have done the following:
 #
 #    1. complete /etc/hosts file
 #    
-#       192.168.30.130 cka-master
-#       192.168.30.131 cka-worker1
-#       192.168.30.132 cka-worker2
+#       192.168.8.3 k8s-master
+#       192.168.8.4 k8s-worker1
+#       192.168.8.5 k8s-worker2
 #
-#    2. root password has been set to 1 on all of node
+#    2. root password has been set to vagrant on all of node
 #
 #       tips:
-#         sudo echo root:1 | chpasswd
+#         sudo echo root:vagrant | chpasswd
 #		
 #    3. enable root ssh login on /etc/ssh/sshd_config
 #
@@ -45,7 +45,7 @@ score=0
 # start grade cka exam
 
 function etcdbackup {
-  echo 'ETC备份题目：正在判定ETCD数据库备份恢复'
+  echo 'ETC备份题目: 正在判定ETCD数据库备份恢复'
   echo
   if [ -f /srv/etcd-snapshot.db ];then
     score=$(expr $score + 2 )
@@ -73,7 +73,7 @@ function etcdbackup {
 }
 
 function rbac {
-  echo 'RBAC授权题目：正在判定RBAC授权'
+  echo 'RBAC授权题目: 正在判定RBAC授权'
   echo
   if kubectl describe clusterrole deployment-clusterrole &> /dev/null;then
     score=$(expr $score + 2 )
@@ -116,13 +116,13 @@ function rbac {
 }
 
 function node_maintenance {
-  echo '禁用节点调度题目：正在判定cka-master是否不可调度'  
+  echo '禁用节点调度题目: 正在判定k8s-master是否不可调度'  
   echo
-  if kubectl get nodes | grep cka-master | grep -q SchedulingDisabled;then
+  if kubectl get nodes | grep k8s-master | grep -q SchedulingDisabled;then
     score=$(expr $score + 2 )
-    pass && echo 'cka-master已设置不可调度'
+    pass && echo 'k8s-master已设置不可调度'
   else
-    fail && echo 'cka-master节点没有设置为不调度'
+    fail && echo 'k8s-master节点没有设置为不调度'
   fi  
   echo
   echo  
@@ -131,23 +131,23 @@ function node_maintenance {
 function upgrade {
   echo '集群升级题目：正在判定集群是否升级成功' 
   echo
-  if kubectl get nodes | grep cka-master | grep -q 1.28.3;then
+  if kubectl get nodes | grep k8s-master | grep -q 1.29.1-1.1;then
     score=$(expr $score + 2 )
-    pass && echo 'cka-master已升级到1.28.3'
+    pass && echo 'k8s-master已升级到1.29.1-1.1'
   else
-    fail && echo 'CKA-Master没有成功升级到1.28.3'
+    fail && echo 'k8s-master没有成功升级到1.29.1-1.1'
   fi  
-  if kubectl version 2> /dev/null | grep -q v1.28.3 &> /dev/null &> /dev/null;then
+  if kubectl version 2> /dev/null | grep -q v1.29.1-1.1 &> /dev/null &> /dev/null;then
     score=$(expr $score + 2 )
-    pass && echo 'kubectl已升级到1.28.3'
+    pass && echo 'kubectl已升级到1.29.1-1.1'
   else
-    fail && echo 'kubectl没有成功升级到1.28.3'
+    fail && echo 'kubectl没有成功升级到1.29.1-1.1'
   fi  
-  if kubelet --version | grep -q v1.28.3 &> /dev/null;then
+  if kubelet --version | grep -q v1.29.1-1.1 &> /dev/null;then
     score=$(expr $score + 2 )
-    pass && echo 'kubelet已升级到1.28.3'
+    pass && echo 'kubelet已升级到1.29.1-1.1'
   else
-    fail && echo 'kubelet没有成功升级到1.28.3'
+    fail && echo 'kubelet没有成功升级到1.29.1-1.1'
   fi  
   echo
   echo  
@@ -179,7 +179,7 @@ function networkpolicy {
 }
 
 function createservice {
-  echo '创建服务并暴露端口题目：正在判定服务是否以nodePort方式开放了容器80端口'   
+  echo '创建服务并暴露端口题目: 正在判定服务是否以nodePort方式开放了容器80端口'   
   echo  
   if kubectl get deployments.apps front-end -o yaml 2> /dev/null | grep -A 20 'image: ' | grep "name: http" &> /dev/null;then
     score=$(expr $score + 2 )
@@ -210,7 +210,7 @@ function createservice {
 }
 
 function ingress {
-  echo '创建ingress题目：正在判定是否可以通过ingress来访问/hi' 
+  echo '创建ingress题目: 正在判定是否可以通过ingress来访问/hi' 
   echo   
   if kubectl describe ingress pong -n ing-internal &> /dev/null;then
     score=$(expr $score + 2 )
@@ -218,7 +218,7 @@ function ingress {
   else
     fail && echo 'ing-internal命名空间中没有pong ingress'
   fi
-  if curl -kL cka-worker2/hi 2> /dev/null | grep -q hi &> /dev/null;then
+  if curl -kL k8s-worker2/hi 2> /dev/null | grep -q hi &> /dev/null;then
     score=$(expr $score + 2 )
     pass && echo '已经可以访问ingress暴露的url'
   else
@@ -229,7 +229,7 @@ function ingress {
 }
 
 function scale {
-  echo '扩容Deployment副本数题目：正在判定loadbalancer副本数是为6'   
+  echo '扩容Deployment副本数题目: 正在判定loadbalancer副本数是为6'   
   echo
   if kubectl get deployments.apps loadbalancer -o yaml 2> /dev/null | grep -q 'replicas: 6';then
     score=$(expr $score + 2 )
@@ -248,7 +248,7 @@ function scale {
 }
 
 function assignpod {
-  echo '定向调度到指定节点题目：正在判定是否将pod分配到了预期的节点上'   
+  echo '定向调度到指定节点题目: 正在判定是否将pod分配到了预期的节点上'   
   echo
   if kubectl get pod nginx-kusc00401 -o yaml 2> /dev/null | grep spinning &> /dev/null;then
     score=$(expr $score + 2 )
@@ -276,7 +276,7 @@ function findhealthnode {
 }
 
 function multicontainer {
-  echo '创建一个pod并包含4个容器题目：正在判定kucc1 Pod是否包括了4个容器'    
+  echo '创建一个pod并包含4个容器题目: 正在判定kucc1 Pod是否包括了4个容器'    
   echo
   if kubectl get pod kucc1 -o yaml 2> /dev/null | grep -E -qi image:.*nginx && kubectl get pod kucc1 -o yaml 2> /dev/null | grep -q image:.*redis && \
      kubectl get pod kucc1 -o yaml 2> /dev/null | grep -qi image:.*memcached && kubectl get pod kucc1 -o yaml 2> /dev/null | grep -q image:.*consul;then
@@ -290,7 +290,7 @@ function multicontainer {
 }
 
 function pvcreate {
-  echo 'app-config pv创建题目：正在判定app-config pv设置是否正确'   
+  echo 'app-config pv创建题目: 正在判定app-config pv设置是否正确'   
   echo 
   if kubectl get pv app-config &> /dev/null;then
     score=$(expr $score + 2 )
@@ -327,7 +327,7 @@ function pvcreate {
 }
 
 function pvc_create {
-  echo 'pv-volume pvc创建题目：正在判定pv-volume pvc以及web-server pod设置是否正确'   
+  echo 'pv-volume pvc创建题目: 正在判定pv-volume pvc以及web-server pod设置是否正确'   
   echo 
   if kubectl get pvc pv-volume  &> /dev/null ;then
     score=$(expr $score + 2 )
@@ -382,7 +382,7 @@ function pvc_create {
 }
 
 function podlog {
-  echo 'pod日志查询题目：正在判定/opt/foobar.txt内容是否正确'   
+  echo 'pod日志查询题目: 正在判定/opt/foobar.txt内容是否正确'   
   echo 
   if cat /opt/foobar.txt 2> /dev/null | grep -q unable-to-access-website ;then
     score=$(expr $score + 2 )
@@ -395,7 +395,7 @@ function podlog {
 }
 
 function sidecar {
-  echo 'sidecar 容器添加题目：正在判定legacy-app中的sidecar容器以及挂载卷是否正确'    
+  echo 'sidecar 容器添加题目: 正在判定legacy-app中的sidecar容器以及挂载卷是否正确'    
   echo
   if kubectl get pod legacy-app | grep -i running &> /dev/null;then
     score=$(expr $score + 2 )
@@ -444,13 +444,13 @@ function sidecar {
 }
 
 function highcpu {
-  echo '查询CPU占用题目：正在判定哪个容器占用CPU最多'    
+  echo '查询CPU占用题目: 正在判定哪个容器占用CPU最多'    
   echo
   highcpu=`kubectl top pod -l name=cpu-user -A --sort-by cpu 2> /dev/null | sed 1d | tr -s ' ' ' ' | cut -d ' ' -f2 | head -n1`
   yours=`cat /opt/findhighcpu.txt 2> /dev/null`
   if [ -f /opt/findhighcpu.txt ] && [ "$highcpu" == "$yours" ];then
     score=$(expr $score + 2 )
-    pass && echo '没错，CPU占用最高的就是这个家伙'
+    pass && echo '没错, CPU占用最高的就是这个家伙'
   else
     fail && echo 'CPU占用最高的不是这个哦'
   fi
@@ -461,11 +461,11 @@ function highcpu {
 function fixnode {
   echo '节点故障修复题目：正在判定故障节点是否已经修复'    
   echo
-  if kubectl get nodes | grep cka-worker1 | grep -w Ready &> /dev/null;then
+  if kubectl get nodes | grep k8s-worker1 | grep -w Ready &> /dev/null;then
     score=$(expr $score + 2 )
     pass && echo '恭喜恭喜，已成功修复'
   else
-    fail && echo '快修快修，CKA-Worker1这个节点还没有修好哦，加油了'
+    fail && echo '快修快修, k8s-worker1这个节点还没有修好哦, 加油了'
   fi
   echo
   echo 
@@ -474,7 +474,7 @@ function fixnode {
 
 # check if hosts if down
 if ! kubectl get pod &> /dev/null;then
-  echo 噢my god，集群让你玩坏了，你得了0分
+  echo 噢my god, 集群让你玩坏了, 你得了0分
 fi
 
 # excution and verify
