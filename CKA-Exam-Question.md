@@ -5,6 +5,7 @@
 
 联系邮箱: 939958092@qq.com
 ```
+
 # Q1: Backup and Restore Etcd
 
 `lixiaohui tips:`
@@ -53,6 +54,7 @@ ca证书：/etc/kubernetes/pki/etcd/ca.crt
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 考试的时候可能需要安装etcd-client，具体以到时候为准，这里记得安装命令
 
 ```bash
@@ -61,7 +63,9 @@ Reading package lists... Done
 Building dependency tree
 Reading state information... Done
 ```
+
 备份数据
+
 ```bash
 root@k8s-master:~# ETCDCTL_API=3 etcdctl \
 --endpoints=https://127.0.0.1:2379 \
@@ -72,12 +76,15 @@ snapshot save /srv/etcd-snapshot.db
 ```
 
 在恢复数据之前，需要停止使用和写入新数据
+
 ```bash
 root@k8s-master:~# mv /etc/kubernetes/manifests /etc/kubernetes/manifests.bak
 
 root@k8s-master:~# mv /var/lib/etcd /var/lib/etcd.bak
 ```
+
 完成数据恢复
+
 ```bash
 root@k8s-master:~# ETCDCTL_API=3 etcdctl \
 --endpoints=https://127.0.0.1:2379 \
@@ -89,6 +96,7 @@ snapshot restore /srv/etcd_exam_backup.db
 ```
 
 恢复服务正常运行
+
 ```bash
 root@k8s-master:~# mv /etc/kubernetes/manifests.bak /etc/kubernetes/manifests
 
@@ -100,6 +108,7 @@ k8s-master    Ready                         control-plane   11h   v1.29.0
 k8s-woker1   NotReady,SchedulingDisabled   worker          11h   v1.29.0
 k8s-woker2   Ready                         worker          11h   v1.29.0
 ```
+
 # Q2: RBAC
 
 You have been asked to create a new ClusterRole for a deployment pipeline and bind it to a specific ServiceAccount scoped to a specific namespace.
@@ -107,9 +116,7 @@ Task
 Create a new ClusterRole named deployment-clusterrole, which only allows to create the following resource types:
 
 1. Deployment
-
 2. StatefulSet
-
 3. DaemonSet
 
 Create a new ServiceAccount named cicd-token in the existing namespace app-team1
@@ -125,9 +132,7 @@ Q2中文题目：
 创建一个名为deployment-clusterrole的clusterrole，该clusterrole只允许创建以下资源
 
 1. Deployment
-
 2. Daemonset
-
 3. Statefulset
 
 在名字为app-team1的namespace下创建一个名为cicd-token的serviceAccount，并且将上一步创建clusterrole的权限绑定到该serviceAccount
@@ -139,17 +144,23 @@ Q2中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 创建新的clusterrole，并使其具有相应的权限
+
 ```bash
 root@k8s-master:~# kubectl create clusterrole deployment-clusterrole \
 --verb=create \
 --resource=deployments,statefulsets,daemonsets
 ```
+
 创建服务账号
+
 ```bash
 root@k8s-master:~# kubectl -n app-team1 create serviceaccount cicd-token
 ```
+
 将服务账号和集群角色绑定
+
 ```bash
 root@k8s-master:~# kubectl -n app-team1 create rolebinding bind-cicd-token \
 --clusterrole=deployment-clusterrole \
@@ -167,6 +178,7 @@ Subjects:
   ----            ----        ---------
   ServiceAccount  cicd-token  app-team1
 ```
+
 验证服务账号权限,经过验证，可以创建deployments，但是不能创建secret
 
 ```bash
@@ -193,7 +205,9 @@ Q3 中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 禁用新的调度
+
 ```bash
 root@k8s-master:~# kubectl cordon k8s-master
 
@@ -203,7 +217,9 @@ k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.29.0
 k8s-woker1   NotReady,SchedulingDisabled   worker          11h   v1.29.0
 k8s-woker2   Ready                         worker          11h   v1.29.0
 ```
+
 将现有工作负载驱赶到其他节点
+
 ```bash
 root@k8s-master:~# kubectl drain k8s-master --delete-emptydir-data --ignore-daemonsets
 ```
@@ -229,6 +245,7 @@ root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
 
 查询现有集群版本和软件版本
+
 ```bash
 root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
@@ -246,15 +263,21 @@ Server Version: version.Info {Major:"1", Minor:"29", GitVersion:"v1.29.0"}
 root@k8s-master:~# kubeadm version
 kubeadm version: &version.Info {Major:"1", Minor:"29", GitVersion:"v1.29.0"}
 ```
+
 禁用新的调度
+
 ```bash
 root@k8s-master:~# kubectl cordon k8s-master
 ```
+
 将现有工作负载驱赶到其他节点
+
 ```bash
 root@k8s-master:~# kubectl drain k8s-master --delete-emptydir-data --ignore-daemonsets
 ```
+
 安装指定版本的kubeadm
+
 ```bash
 root@k8s-master:~# apt-mark unhold kubeadm
 root@k8s-master:~# apt update
@@ -267,7 +290,9 @@ root@k8s-master:~# apt-mark hold kubeadm
 root@k8s-master:~# kubeadm version
 kubeadm version: &version.Info {Major:"1", Minor:"29", GitVersion:"v1.29.1"}
 ```
+
 查询现有可升级的版本
+
 ```bash
 root@k8s-master:~# kubeadm upgrade plan
 ...
@@ -275,7 +300,9 @@ You can now apply the upgrade by executing the following command:
 
         kubeadm upgrade apply v1.29.1
 ```
+
 完成版本升级，记得指定不升级etcd的参数
+
 ```bash
 root@k8s-master:~# apt-mark unhold kubeadm
 root@k8s-master:~# kubeadm upgrade apply v1.29.1 --etcd-upgrade=false
@@ -286,6 +313,7 @@ root@k8s-master:~# kubeadm upgrade apply v1.29.1 --etcd-upgrade=false
 
 [upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
 ```
+
 升级完成后，把kubelet、kubectl升级到指定版本
 
 ```bash
@@ -299,7 +327,9 @@ root@k8s-master:~# apt-mark hold kubelet
 root@k8s-master:~# apt-mark hold kubectl
 root@k8s-master:~# apt-mark hold kubeadm
 ```
+
 重启kuelet服务，并查询状态
+
 ```bash
 root@k8s-master:~# systemctl daemon-reload
 root@k8s-master:~# systemctl restart kubelet.service
@@ -309,8 +339,10 @@ k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.29.1
 k8s-woker1   NotReady,SchedulingDisabled   worker          11h   v1.29.0
 k8s-woker2   Ready                         worker          11h   v1.29.0
 ```
+
 这里要格外注意，正式考试的时候一定要对你刚升级的节点执行uncordon，不然本题不会得分
 但是我们的模拟考试为了照顾大家的计算机性能，没有额外部署节点，所以在我们模拟考试的时候，不要执行uncordon，不然本地模拟考试时会且只会损失1分
+
 ```bash
 root@k8s-master:~# kubectl uncordon k8s-master
 root@k8s-master:~# kubectl get nodes
@@ -327,7 +359,6 @@ Create a new NetworkPolicy named allow-port-from-namespace that allows Pods in n
 Ensure that the new NetworkPolicy:
 
 1. does not allow access to Pods not listening on port 80
-
 2. does not allow access from Pods not in namespace corp
 
 ---
@@ -339,7 +370,6 @@ Q5 中文题目：
 确保新的 NetworkPolicy：
 
 1. 不允许访问没有监听80端口的Pod
-
 2. 并且只允许corp命令空间的下的Pod访问
 
 ---
@@ -397,6 +427,7 @@ Spec:
   Policy Types: Ingress
 
 ```
+
 确认internal pod的IP地址
 
 ```bash
@@ -406,10 +437,13 @@ internlpod   1/1     Running   0          5m21s   172.16.245.1   k8s-woker2   <n
 ```
 
 从宿主机上无法访问
+
 ```bash
 root@k8s-master:~# curl 172.16.245.1
 ```
+
 从corp namespace中可以访问
+
 ```bash
 root@k8s-master:~# kubectl get pod -n corp
 NAME      READY   STATUS    RESTARTS   AGE
@@ -419,6 +453,7 @@ root@k8s-master:~# kubectl exec -it -n corp corppod -- curl 172.16.245.1
 
 <title>Welcome to nginx!</title>
 ```
+
 # Q6: Create service
 
 Reconfigure the existing deployment front-end and add a port specification named http exposing port 80/tcp of the existing container nginx
@@ -458,6 +493,7 @@ containers:
 ```
 
 以NodePort方式暴露端口并验证
+
 ```bash
 root@k8s-master:~# kubectl expose deployment front-end --name=front-end-svc --port=80 --target-port=80 --type=NodePort
 
@@ -480,14 +516,12 @@ root@k8s-master:~# curl k8s-woker2:32402
 Create a new nginx ingress resource as follows:
 
 1. Name: pong
-
 2. Namespace: ing-internal
-
 3. Exposing service hi on path /hi using service port 5678
 
-Tips: 
+Tips:
 
-The availability of service hi can be checked using the following commands,which should retun hi: 
+The availability of service hi can be checked using the following commands,which should retun hi:
 curl -KL <INTERNAL_IP>/hi
 
 ---
@@ -505,7 +539,9 @@ Q7 中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 创建ingress
+
 ```bash
 vim ingress.yml 
 ```
@@ -531,10 +567,13 @@ spec:
             port:
               number: 5678
 ```
+
 ```bash
 root@k8s-master:~# kubectl create -f ingress.yml 
 ```
+
 验证是否可访问
+
 ```bash
 root@k8s-master:~# kubectl get ingress -n ing-internal
 NAME   CLASS   HOSTS   ADDRESS          PORTS   AGE
@@ -561,6 +600,7 @@ Q8 中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 调整副本数为6并验证
 
 ```bash
@@ -576,9 +616,7 @@ loadbalancer   6/6     6            6           43m
 Schedule a pod as follows:
 
 1. Name: nginx-kusc00401
-
 2. Image: nginx
-
 3. Node selector: disk=spinning
 
 ---
@@ -594,11 +632,13 @@ Q9 中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 创建pod，为了优化速度，镜像用了阿里云，考试用它指定的镜像
 
 ```bash
 vim assignpod.yml
 ```
+
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -616,7 +656,9 @@ spec:
 ```bash
 kubectl create -f assignpod.yml
 ```
+
 验证nodes标签
+
 ```bash
 root@k8s-master:~# kubectl get nodes --show-labels
 NAME          STATUS     ROLES           AGE   VERSION   LABELS
@@ -624,7 +666,9 @@ k8s-master    Ready      control-plane   14h   v1.29.1   ...
 k8s-woker1   NotReady   worker          14h   v1.29.0   ...
 k8s-woker2   Ready      worker          14h   v1.29.0   disk=spinning
 ```
+
 查询pod是否如期调度
+
 ```bash
 root@k8s-master:~# kubectl get pod -o wide
 NAME                                      READY   STATUS    RESTARTS   AGE    IP              NODE          NOMINATED NODE   READINESS GATES
@@ -648,13 +692,16 @@ Q10 中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 查询出不包含noschedule和unreachable的节点数量
 
 ```bash
 root@k8s-master:~# kubectl describe node | grep -i taints|grep -v -i -e noschedule -e unreachable | wc -l
 1
 ```
+
 以你实际情况为准
+
 ```bash
 root@k8s-master:~# echo 1 > /opt/kusc00402.txt
 root@k8s-master:~# cat /opt/kusc00402.txt
@@ -678,10 +725,13 @@ Q11 中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 创建kucc1 pod，为了优化速度，镜像用了阿里云，考试用它指定的镜像
+
 ```bash
 vim multipod.yml
 ```
+
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -702,7 +752,9 @@ spec:
 ```bash
 root@k8s-master:~# kubectl create -f multipod.yml 
 ```
+
 验证是否是4/4 running
+
 ```bash
 root@k8s-master:~# kubectl get -f multipod.yml 
 NAME    READY   STATUS    RESTARTS   AGE
@@ -726,11 +778,13 @@ Q12 中文题目:
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 创建PV
 
 ```bash
 vim pv.yml 
 ```
+
 ```yaml
 apiVersion: v1
 kind: PersistentVolume
@@ -759,17 +813,13 @@ app-config   2Gi        RWO            Retain           Available               
 Create a new PersistentVolumeClaim:
 
 1. Name: pv-volume
-
 2. Class: csi-hostpath-sc
-
 3. Capacity: 10Mi
 
 Create a new Pod which mounts the persistentVolumeClaim as a volume:
 
 1. Name: web-server
-
 2. Image: nginx
-
 3. Mount path: /usr/share/nginx/html
 
 Configure the new Pod to have ReadWriteOnce access on the volume.
@@ -790,6 +840,7 @@ Q13 中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 创建PVC，注意storageClassName
 
 ```bash
@@ -813,6 +864,7 @@ spec:
 ```bash
 root@k8s-master:~# kubectl create -f pvc.yml 
 ```
+
 创建pod来使用pvc，为了优化速度，镜像用了阿里云，考试用它指定的镜像
 
 ```bash
@@ -854,7 +906,9 @@ root@k8s-master:~# kubectl get storageclasses csi-hostpath-sc
 NAME                        PROVISIONER         RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
 csi-hostpath-sc (default)   cnlxh/nfs-storage   Delete          Immediate           true                   51m
 ```
+
 如果ALLOWVOLUMEEXPANSION参数是False，是不能扩容的，采取下方的方法修改一下，改成true
+
 ```bash
 kubectl edit storageclasses csi-hostpath-sc
 apiVersion: storage.k8s.io/v1
@@ -865,11 +919,15 @@ provisioner: cnlxh/nfs-storage
 ...
 allowVolumeExpansion: true
 ```
+
 第一种方法，模拟环境中由于NFS特性，不支持扩容，考试中可以的
+
 ```bash
 root@k8s-master:~# kubectl patch pvc pv-volume  -p '{"spec":{"resources":{"requests":{"storage": "70Mi"}}}}' --record
 ```
+
 第二种方法，模拟环境中由于NFS特性，不支持扩容，考试中可以的
+
 ```bash
 root@k8s-master:~# kubectl edit pvc pv-volume --record=true
 ...
@@ -886,7 +944,6 @@ spec:
 Monitor the logs of pod foobar and :
 
 1. Extract log lines corresponding to error unable-to-access-website
-
 2. Write them to /opt/foobar.txt
 
 ---
@@ -917,14 +974,13 @@ Add a busybox sidecar container to the existing Pod legacy-app. The new sidecar 
 ```bash
 /bin/sh -c tail -n+1 -f /var/log/legacy-app.log
 ```
+
 Use a volume mount named logs to make the file /var/log/legacy-app.log available to the sidecar container.
 
 **TIPS**
 
 1. Don't modify the existing container.
-
 2. Don't modify the path of the log file, both containers
-
 3. must access it at /var/log/legacy-app.log
 
 ---
@@ -940,12 +996,15 @@ Q15 中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 导出现有容器yaml
 
 ```bash
 root@k8s-master:~# kubectl get pod legacy-app -o yaml > sidecar.yaml
 ```
+
 修改导出的yaml文件，在现有容器上添加volumeMounts参数来挂载logs到/var/log，并添加新容器同样挂载这个位置，不要忘了创建出logs卷，为了优化速度，镜像用了阿里云，考试用它指定的镜像
+
 ```bash
 vim sidecar.yaml
 ```
@@ -978,6 +1037,7 @@ spec:
   - name: logs
     emptyDir: {}
 ```
+
 pod不支持直接修改，确认没问题之后，直接删除原有pod并重建
 
 ```bash
@@ -1006,6 +1066,7 @@ Q16 中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 考试时直接用top pod来看谁的CPU用的更高，填写即可，用肉眼分析也可以的
 
 ```bash
@@ -1043,7 +1104,9 @@ Q17 中文题目：
 ```bash
 root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```
+
 发现k8s-woker1节点是NotReady
+
 ```bash
 root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE    VERSION
@@ -1051,7 +1114,9 @@ k8s-master    Ready,SchedulingDisabled      control-plane   2d1h   v1.29.1
 k8s-woker1   NotReady,SchedulingDisabled   worker          2d1h   v1.29.0
 k8s-woker2   Ready                         worker          2d1h   v1.29.0
 ```
+
 描述一下节点，看看事件，发现kubelet服务停止了
+
 ```bash
 root@k8s-master:~# kubectl describe nodes k8s-woker1
 ...
@@ -1065,20 +1130,26 @@ Conditions:
   Ready                NodeStatusUnknown            Kubelet stopped posting node status.
 
 ```
+
 一般kubelet服务不启动，也有可能的runtime的问题，顺便查询docker服务，发现也没启动
+
 ```bash
 root@k8s-woker1:~# systemctl status docker
 ● docker.service - Docker Application Container Engine
      Loaded: loaded (/lib/systemd/system/docker.service; disabled; vendor preset: enabled)
      Active: inactive (dead) since Tue 2022-12-06 14:08:47 UTC; 1s ago
 ```
-修复两个服务状态，记得enable
+
+修复docker以及docker垫片服务状态之后，再修复kubelet，最后记得enable
+
 ```bash
 root@k8s-master:~# ssh root@k8s-woker1
 root@k8s-woker1:~# systemctl start docker 
+root@k8s-woker1:~# systemctl start cri-docker
 root@k8s-woker1:~# systemctl start kubelet 
-root@k8s-woker1:~# systemctl enable kubelet docker
+root@k8s-woker1:~# systemctl enable kubelet docker cri-docker
 ```
+
 **另外请注意，有同学反馈考试时有遇到runtime不是docker，而是containerd的情况，所以考试时，灵活一些，看看到底是docker还是containerd，具体可以docker images看看是否有考试过程中的镜像，或者以下方式查询：**
 
 ```bash
