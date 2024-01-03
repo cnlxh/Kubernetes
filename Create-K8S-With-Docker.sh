@@ -115,17 +115,17 @@ cat > create-k8s.yaml <<'EOF'
     - name: Deploy repos on ubuntu
       shell: |
         cat > /etc/apt/sources.list <<EOF1
-        deb https://mirror.nju.edu.cn/docker-ce/linux/ubuntu jammy stable
-        deb https://mirror.nju.edu.cn/ubuntu jammy main restricted
-        deb https://mirror.nju.edu.cn/ubuntu jammy-updates main restricted
-        deb https://mirror.nju.edu.cn/ubuntu jammy universe
-        deb https://mirror.nju.edu.cn/ubuntu jammy-updates universe
-        deb https://mirror.nju.edu.cn/ubuntu jammy multiverse
-        deb https://mirror.nju.edu.cn/ubuntu jammy-updates multiverse
-        deb https://mirror.nju.edu.cn/ubuntu jammy-backports main restricted universe multiverse
-        deb https://mirror.nju.edu.cn/ubuntu jammy-security main restricted
-        deb https://mirror.nju.edu.cn/ubuntu jammy-security universe
-        deb https://mirror.nju.edu.cn/ubuntu jammy-security multiverse
+        deb https://mirror.nju.edu.cn/docker-ce/linux/ubuntu focal stable
+        deb https://mirror.nju.edu.cn/ubuntu focal main restricted
+        deb https://mirror.nju.edu.cn/ubuntu focal-updates main restricted
+        deb https://mirror.nju.edu.cn/ubuntu focal universe
+        deb https://mirror.nju.edu.cn/ubuntu focal-updates universe
+        deb https://mirror.nju.edu.cn/ubuntu focal multiverse
+        deb https://mirror.nju.edu.cn/ubuntu focal-updates multiverse
+        deb https://mirror.nju.edu.cn/ubuntu focal-backports main restricted universe multiverse
+        deb https://mirror.nju.edu.cn/ubuntu focal-security main restricted
+        deb https://mirror.nju.edu.cn/ubuntu focal-security universe
+        deb https://mirror.nju.edu.cn/ubuntu focal-security multiverse
         deb https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /
         EOF1
 
@@ -284,7 +284,7 @@ cat > create-k8s.yaml <<'EOF'
     - block:
         - name: Deploy CRI-Docker
           apt:
-            deb: https://ghproxy.net/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.8/cri-dockerd_0.3.8.3-0.ubuntu-jammy_amd64.deb
+            deb: https://ghproxy.net/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.9/cri-dockerd_0.3.9.3-0.ubuntu-focal_amd64.deb
 
       rescue:
         - name: clean apt lock
@@ -295,7 +295,7 @@ cat > create-k8s.yaml <<'EOF'
             apt update  
         - name: Deploy CRI-Docker
           apt:
-            deb: https://mirror.ghproxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.8/cri-dockerd_0.3.8.3-0.ubuntu-jammy_amd64.deb
+            deb: https://mirror.ghproxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.9/cri-dockerd_0.3.9.3-0.ubuntu-focal_amd64.deb
 
     - name: modify sandbox image to aliyun
       shell: |
@@ -436,7 +436,7 @@ cat > create-k8s.yaml <<'EOF'
       when: "'master' in group_names"
     - name: Deploy Calico
       shell: |
-        kubectl create -f https://docs.projectcalico.org/manifests/calico.yaml
+        kubectl create -f https://gitee.com/cnlxh/Kubernetes/raw/master/cka-yaml/calico.yaml
         sleep 30s
       when: "'master' in group_names"
     - name: join workers
