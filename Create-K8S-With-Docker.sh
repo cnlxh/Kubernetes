@@ -299,7 +299,7 @@ cat > create-k8s.yaml <<'EOF'
 
     - name: modify sandbox image to aliyun
       shell: |
-        sed -i 's/ExecStart=.*/ExecStart=\/usr\/bin\/cri-dockerd --container-runtime-endpoint fd:\/\/ --network-plugin=cni --pod-infra-container-image=registry.cn-hangzhou.aliyuncs.com\/google_containers\/pause:3.8/' /lib/systemd/system/cri-docker.service
+        sed -i 's/ExecStart=.*/ExecStart=\/usr\/bin\/cri-dockerd --container-runtime-endpoint fd:\/\/ --network-plugin=cni --pod-infra-container-image=registry.cn-hangzhou.aliyuncs.com\/google_containers\/pause:3.9/' /lib/systemd/system/cri-docker.service
     - name: starting cri-docker service
       systemd:
         state: restarted
