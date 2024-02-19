@@ -25,7 +25,7 @@ echo "##########################################################################
 #         sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 #         sudo systemctl restart sshd
 #
-#    4. this tools will only install kubernetes v1.29.0-1.1 for CKA Exam upgrade, if you want other version, please modify kubeadm kubelet kubectl version in script
+#    4. this tools will only install kubernetes v1.29.1-1.1 for CKA Exam upgrade, if you want other version, please modify kubeadm kubelet kubectl version in script
 #
 ######################################################################################################"
 echo
@@ -284,7 +284,7 @@ cat > create-k8s.yaml <<'EOF'
     - block:
         - name: Deploy CRI-Docker
           apt:
-            deb: https://ghproxy.net/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.9/cri-dockerd_0.3.9.3-0.ubuntu-focal_amd64.deb
+            deb: https://ghproxy.net/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.10/cri-dockerd_0.3.10.3-0.ubuntu-focal_amd64.deb
 
       rescue:
         - name: clean apt lock
@@ -295,7 +295,7 @@ cat > create-k8s.yaml <<'EOF'
             apt update  
         - name: Deploy CRI-Docker
           apt:
-            deb: https://mirror.ghproxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.9/cri-dockerd_0.3.9.3-0.ubuntu-focal_amd64.deb
+            deb: https://mirror.ghproxy.com/https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.10/cri-dockerd_0.3.10.3-0.ubuntu-focal_amd64.deb
 
     - name: modify sandbox image to aliyun
       shell: |
@@ -359,9 +359,9 @@ cat > create-k8s.yaml <<'EOF'
     - name: install kubeadm kubectl kubelet
       package:
         name:
-          - kubeadm=1.29.0-1.1
-          - kubelet=1.29.0-1.1
-          - kubectl=1.29.0-1.1
+          - kubeadm=1.29.1-1.1
+          - kubelet=1.29.1-1.1
+          - kubectl=1.29.1-1.1
           - sshpass
         state: present
     - name: clean apt lock
