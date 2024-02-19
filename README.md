@@ -70,9 +70,9 @@
         ```bash
         root@k8s-master:~# kubectl get nodes
         NAME          STATUS   ROLES           AGE     VERSION
-        k8s-master    Ready    control-plane   7d17h   v1.29.0
-        k8s-worker1   Ready    worker          7d17h   v1.29.0
-        k8s-worker2   Ready    worker          7d17h   v1.29.0
+        k8s-master    Ready    control-plane   7d17h   v1.29.1
+        k8s-worker1   Ready    worker          7d17h   v1.29.1
+        k8s-worker2   Ready    worker          7d17h   v1.29.1
         ```
 
     2. 执行脚本来部署练习环境
