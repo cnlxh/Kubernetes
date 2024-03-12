@@ -264,9 +264,6 @@ function highcpu {
 
 function fixnode {
     echo 'Preparing k8s-worker1 state into NotReady and SchedulingDisabled'
-    while `kubectl get pod -A | grep -qi ContainerCreating`;do
-      sleep 1s
-    done
     sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 systemctl disable kubelet docker.service docker.socket --now &> /dev/null
 }
 
@@ -309,73 +306,122 @@ backup
 
 # check if script not completed run
 
+echo "Waiting for Pods ready, Please wait, You can type 'kubectl get pod -A' in new terminal for check"
+
+## rbac
+
 if ! kubectl get namespace app-team1 &> /dev/null;then
   rbac &> /dev/null
 fi
 
+## backup
+
 if kubectl get namespace cka-etcd-backup-check &> /dev/null;then
   kubectl delete namespace cka-etcd-backup-check &> /dev/null
-elif ! [ -e /srv/etcd_exam_backup.db ];then
+fi
+
+if ! [ -e /srv/etcd_exam_backup.db ];then
   ETCDCTL_API=3 etcdctl \
     --endpoints=https://127.0.0.1:2379 \
     --cacert=/etc/kubernetes/pki/etcd/ca.crt \
     --cert=/etc/kubernetes/pki/etcd/server.crt \
     --key=/etc/kubernetes/pki/etcd/server.key \
-    snapshot save /srv/etcd_exam_backup.db &> /dev/null 
+    snapshot save /srv/etcd_exam_backup.db &> /dev/null
+else
+  rm -rf /srv/etcd_exam_backup.db
+  backup &> /dev/null 
 fi
 
-if ! kubectl get pod internlpod -n internal &> /dev/null || kubectl get pod corppod -n corp &> /dev/null;then
+## neworkpolicy
+
+if ! kubectl get namespace internal &> /dev/null;then
   networkpolicy &> /dev/null
 fi
+
+if ! kubectl get namespace corp &> /dev/null;then
+  networkpolicy &> /dev/null
+fi
+
+if ! kubectl get pod internlpod -n internal &> /dev/null || ! kubectl get pod corppod -n corp &> /dev/null;then
+  networkpolicy &> /dev/null
+fi
+
+## service
 
 if ! kubectl get deployment front-end &> /dev/null;then
   service &> /dev/null
 fi
 
-if ! kubectl -n ing-internal get pod hi &> /dev/null || kubectl -n ing-internal get service hi &> /dev/null;then
+## ingress 
+
+if ! kubectl get namespace ingress-nginx &> /dev/null;then
+  kubectl apply -f https://gitee.com/cnlxh/Kubernetes/raw/master/cka-yaml/ingressdeploy.yaml &> /dev/null
+fi
+
+if ! kubectl -n ing-internal get pod hi &> /dev/null || ! kubectl -n ing-internal get service hi &> /dev/null;then
   ingress &> /dev/null 
 fi
+
+## scale
 
 if ! kubectl get deployment loadbalancer &> /dev/null;then
   scale &> /dev/null  
 fi
 
+## assignpod
+
 if ! kubectl get nodes --show-labels | grep -q disk;then
   assignpod &> /dev/null   
 fi
 
+## pv
 
 if ! [ -e /srv/app-data ];then
   pv &> /dev/null  
+fi
+
+## pvc
+
+apt install nfs-kernel-server nfs-common -y  &> /dev/null
+
+if ! [ -e /nfsshare ];then
+  pvc &> /dev/null 
 fi
 
 if ! kubectl get storageclasses csi-hostpath-sc &> /dev/null || ! kubectl get deployment nfs-client-provisioner &> /dev/null;then
   pvc &> /dev/null 
 fi
 
+## log
+
 if ! kubectl get pod foobar &> /dev/null;then
   log &> /dev/null 
 fi
+
+## sidecar
 
 if ! kubectl get pod legacy-app &> /dev/null;then
   sidecar &> /dev/null  
 fi
 
+## highcpu
+
 if ! kubectl top nodes &> /dev/null;then
   highcpu &> /dev/null   
 fi
 
-if ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 systemctl is-active kubelet &> /dev/null;then
+## fixnode
+
+if sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 systemctl is-active kubelet &> /dev/null;then
   fixnode &> /dev/null      
 fi
 
-echo
-echo "Waiting for Pods ready, Please wait, You can type 'kubectl get pod -A' in new terminal for check"
-echo
+## wait for pod ready
+
 while true; do 
   if kubectl get pod -A | grep -i -E 'error|back|init|creati' &> /dev/null;then
-     echo "please type 'kubectl get pod -A' in new terminal, some pod status is not normal, you can type 'kubectl describe pod' try to fix it. "
-     sleep 1
+     echo "please type 'kubectl get pod -A' in new terminal, some pod status is not normal, you can type 'kubectl describe pod xxx' try to fix it. "
+     sleep 20
   else
     break
   fi
@@ -383,6 +429,6 @@ done
 
 echo
 echo
-echo -ne "\033[4;96m Please don't poweroff or disconnect from internet quickly, may be container image is still in downloading now \033[0m\t"
+echo -ne "\033[4;96m You MUST restore snapshot and re-run this script after reboot \033[0m\t"
 echo
 echo
