@@ -305,7 +305,7 @@ backup
 
 
 # check if script not completed run
-
+echo
 echo "Waiting for Pods ready, Please wait, You can type 'kubectl get pod -A' in new terminal for check"
 
 ## rbac
@@ -421,13 +421,12 @@ fi
 while true; do 
   if kubectl get pod -A | grep -i -E 'error|back|init|creati' &> /dev/null;then
      echo "please type 'kubectl get pod -A' in new terminal, some pod status is not normal, you can type 'kubectl describe pod xxx' try to fix it. "
-     sleep 20
+     sleep 5
   else
     break
   fi
 done
 
-echo
 echo
 echo -ne "\033[4;96m You MUST restore snapshot and re-run this script after reboot \033[0m\t"
 echo
