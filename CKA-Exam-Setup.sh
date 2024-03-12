@@ -186,9 +186,9 @@ function pv {
 
 function pvc {
     echo 'Preparing nfs server on k8s-master nodes'
-    rm -rf /var/lib/apt/lists/lock
-    rm -rf /var/cache/apt/archives/lock
-    rm -rf /var/lib/dpkg/lock*
+    fuser -k /var/lib/apt/lists/lock &> /dev/null
+    fuser /var/cache/apt/archives/lock &> /dev/null
+    fuser /var/lib/dpkg/lock &> /dev/null
     dpkg --configure -a &> /dev/null
     apt install nfs-kernel-server nfs-common -y  &> /dev/null
     mkdir /nfsshare  &> /dev/null
@@ -385,10 +385,11 @@ if ! [ -e /srv/app-data ];then
 fi
 
 ## pvc
-rm -rf /var/lib/apt/lists/lock
-rm -rf /var/cache/apt/archives/lock
-rm -rf /var/lib/dpkg/lock*
+fuser -k /var/lib/apt/lists/lock &> /dev/null
+fuser /var/cache/apt/archives/lock &> /dev/null
+fuser /var/lib/dpkg/lock &> /dev/null
 dpkg --configure -a &> /dev/null
+
 apt update &> /dev/null
 apt install nfs-kernel-server nfs-common -y  &> /dev/null
 
