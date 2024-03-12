@@ -189,7 +189,7 @@ function pvc {
     rm -rf /var/lib/apt/lists/lock
     rm -rf /var/cache/apt/archives/lock
     rm -rf /var/lib/dpkg/lock*
-    dpkg --configure -a
+    dpkg --configure -a &> /dev/null
     apt install nfs-kernel-server nfs-common -y  &> /dev/null
     mkdir /nfsshare  &> /dev/null
     chmod 777 /nfsshare -R  &> /dev/null
@@ -388,8 +388,8 @@ fi
 rm -rf /var/lib/apt/lists/lock
 rm -rf /var/cache/apt/archives/lock
 rm -rf /var/lib/dpkg/lock*
-dpkg --configure -a
-apt update
+dpkg --configure -a &> /dev/null
+apt update &> /dev/null
 apt install nfs-kernel-server nfs-common -y  &> /dev/null
 
 if ! [ -e /nfsshare ];then
