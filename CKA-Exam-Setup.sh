@@ -190,7 +190,8 @@ function pvc {
     fuser -k /var/cache/apt/archives/lock &> /dev/null
     fuser -k /var/lib/dpkg/lock &> /dev/null
     dpkg --configure -a &> /dev/null
-    apt install nfs-kernel-server nfs-common -y  &> /dev/null
+    apt update &> /dev/null && apt install nfs-kernel-server nfs-common -y  &> /dev/null
+    apt update &> /dev/null && apt install nfs-kernel-server nfs-common -y  &> /dev/null
     mkdir /nfsshare  &> /dev/null
     chmod 777 /nfsshare -R  &> /dev/null
     echo '/nfsshare *(rw)' > /etc/exports
@@ -389,11 +390,11 @@ fuser -k /var/lib/apt/lists/lock &> /dev/null
 fuser -k /var/cache/apt/archives/lock &> /dev/null
 fuser -k /var/lib/dpkg/lock &> /dev/null
 dpkg --configure -a &> /dev/null
-
 apt update &> /dev/null
-apt install nfs-kernel-server nfs-common -y  &> /dev/null
 
-if ! [ -e /nfsshare ];then
+apt list 2> /dev/null | grep nfs-kernel-server | grep -q installed &> /dev/null
+
+if ! [ -e /nfsshare ] || ! [ $? -eq 0 ] ;then
   pvc &> /dev/null 
 fi
 
@@ -428,15 +429,16 @@ fi
 ## wait for pod ready
 
 while true; do 
-  if kubectl get pod -A | grep -i -E 'error|back|init|creati' &> /dev/null;then
-     echo "please type 'kubectl get pod -A' in new terminal, some pod status is not normal, you can type 'kubectl describe pod xxx' try to fix it. "
+  if kubectl get pod -A &> /tmp/kubectl_output && grep -i -E 'error|back|init|creati' /tmp/kubectl_output &> /dev/null; then
+     echo "Please type 'kubectl get pod -A' in a new terminal. Some pod statuses are not normal. You can type 'kubectl describe pod xxx' to try to fix it."
      sleep 5
+     rm -rf /tmp/kubectl_output
   else
     break
   fi
 done
 
 echo
-echo -ne "\033[4;96m You MUST restore snapshot and re-run this script after reboot \033[0m\t"
+echo -ne "\033[4;96m Deploy success now, You MUST restore snapshot and re-run this script after reboot \033[0m\t\n"
 echo
 echo
