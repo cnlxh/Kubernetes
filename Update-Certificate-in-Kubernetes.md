@@ -146,7 +146,7 @@ V7xXXG8qRHKPE7kjxq4DdeIGWru3l7qFn2NgmYhRwgDL+ObvkXu1NXCVgERB
 看看证书有效期
 
 ```bash
-openssl x509 -in config-old -text
+base64 --decode config-old | openssl x509 -in - -text
 ```
 从输出看，2025年5月31日过期，也就是说证书更新的过程并没有更新config文件，所以我们才要手工更新
 
