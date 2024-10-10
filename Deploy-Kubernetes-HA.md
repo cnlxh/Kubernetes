@@ -1,16 +1,16 @@
 | 角色                | IP             | 主机名                     | 操作系统平台     | 软件版本              |
 | ----------------- | -------------- | ----------------------- | ---------- | ----------------- |
-| k8s-master & etcd | 192.168.30.128 | k8s-master01.xiaohui.cn | CentOS 7.9 | kubernetes 1.25.0 |
-| k8s-master & etcd | 192.168.30.129 | k8s-master02.xiaohui.cn | CentOS 7.9 | kubernetes 1.25.0 |
-| k8s-master & etcd | 192.168.30.130 | k8s-master03.xiaohui.cn | CentOS 7.9 | kubernetes 1.25.0 |
+| k8s-master & etcd | 192.168.8.3 | k8s-master01.xiaohui.cn | CentOS 7.9 | kubernetes 1.25.0 |
+| k8s-master & etcd | 192.168.8.4 | k8s-master02.xiaohui.cn | CentOS 7.9 | kubernetes 1.25.0 |
+| k8s-master & etcd | 192.168.8.5 | k8s-master03.xiaohui.cn | CentOS 7.9 | kubernetes 1.25.0 |
 | k8s-worker        | 192.168.30.131 | k8s-worker01.xiaohui.cn | CentOS 7.9 | kubernetes 1.25.0 |
 | k8s-worker        | 192.168.30.132 | k8s-worker02.xiaohui.cn | CentOS 7.9 | kubernetes 1.25.0 |
 | keepalived        | 192.168.30.200 | k8s-master01.xiaohui.cn | CentOS 7.9 | keepalived 2.2.7  |
 | keepalived        | 192.168.30.200 | k8s-master02.xiaohui.cn | CentOS 7.9 | keepalived 2.2.7  |
 | keepalived        | 192.168.30.200 | k8s-master03.xiaohui.cn | CentOS 7.9 | keepalived 2.2.7  |
-| Haproxy           | 192.168.30.128 | k8s-master01.xiaohui.cn | CentOS 7.9 | haproxy 2.6.5     |
-| Haproxy           | 192.168.30.129 | k8s-master02.xiaohui.cn | CentOS 7.9 | haproxy 2.6.5     |
-| Haproxy           | 192.168.30.130 | k8s-master03.xiaohui.cn | CentOS 7.9 | haproxy 2.6.5     |
+| Haproxy           | 192.168.8.3 | k8s-master01.xiaohui.cn | CentOS 7.9 | haproxy 2.6.5     |
+| Haproxy           | 192.168.8.4 | k8s-master02.xiaohui.cn | CentOS 7.9 | haproxy 2.6.5     |
+| Haproxy           | 192.168.8.5 | k8s-master03.xiaohui.cn | CentOS 7.9 | haproxy 2.6.5     |
 |                   |                |                         |            |                   |
 
 # 文档拓扑描述
@@ -21,60 +21,82 @@
 
 # 部署 Haproxy服务
 
-Haproxy 在这里承担了K8S Master节点之间的负载均衡角色
+Haproxy 在这里承担了K8S Master节点之间的负载均衡角色，需要在所有的控制平面机器上都安装
 
 ## 添加域名解析
 
 ```bash
 cat << EOF >> /etc/hosts
-192.168.30.128 k8s-master01.xiaohui.cn k8s-master01
-192.168.30.129 k8s-master02.xiaohui.cn k8s-master02
-192.168.30.130 k8s-master03.xiaohui.cn k8s-master03
+192.168.8.3 k8s-master01.xiaohui.cn k8s-master01
+192.168.8.4 k8s-master02.xiaohui.cn k8s-master02
+192.168.8.5 k8s-master03.xiaohui.cn k8s-master03
 192.168.30.131 k8s-worker01.xiaohui.cn k8s-worker01
 192.168.30.132 k8s-worker02.xiaohui.cn k8s-worker02
 192.168.30.200 k8s.xiaohui.cn k8s
 EOF
 ```
 
-## 准备软件包
+## 安装haproxy最新版
+
+这里可以找到最新版的haproxy
+
+```text
+https://github.com/haproxy/haproxy/tags
+```
+我写文章的时候，最新版是3.0.0
 
 ```bash
-wget http://www.haproxy.org/download/2.6/src/haproxy-2.6.5.tar.gz
-wget https://www.lua.org/ftp/lua-5.4.4.tar.gz
-tar xf lua-5.4.4.tar.gz
-tar xf haproxy-2.6.5.tar.gz
+wget https://github.com/haproxy/haproxy/archive/refs/tags/v3.0.0.tar.gz
+tar xf tar xf v3.0.0.tar.gz
 ```
 
-编译遇到错误，需要更新lua版本、安装openssl-devel、pcre-devel、systemd-devel
+编译安装的时候还需要lua支持
 
 ```bash
-make -j $(nproc) TARGET=linux-glibc USE_OPENSSL=1 USE_LUA=1 USE_PCRE=1 USE_SYSTEMD=1
-Makefile:661: *** unable to automatically detect the Lua library name, you can enforce its name with LUA_LIB_NAME=<name> (where <name> can be lua5.4, lua54, lua, ...).  Stop
-include/haproxy/regex-t.h:31:18: fatal error: pcre.h: No such file or directory
-include/haproxy/openssl-compat.h:5:24: fatal error: openssl/bn.h: No such file or directory
-src/haproxy.c:80:31: fatal error: systemd/sd-daemon.h: No such file or directory
+wget https://www.lua.org/ftp/lua-5.4.7.tar.gz
+tar xf lua-5.4.7.tar.gz
 ```
 
-```bash
-yum install gcc pcre-devel openssl-devel systemd-devel -y
-```
+编译安装需要有make和gcc支持
 
 ```bash
-cd lua-5.4.4
+apt install make gcc -y
+```
+
+编译安装lua
+
+```bash
+cd lua-5.4.7/
 make
 make install
-cd ../haproxy-2.6.5/
+cd
 ```
 
+为haproxy准备编译先决条件
+
 ```bash
-make -j $(nproc) TARGET=linux-glibc USE_OPENSSL=1 USE_LUA=1 USE_PCRE=1 USE_SYSTEMD=1
+cd haproxy-3.0.0/
+apt install libpcre2-dev libssl-dev -y
+```
+
+编译安装haproxy
+
+```bash
+make -j $(nproc) TARGET=linux-glibc \
+USE_OPENSSL=1 USE_QUIC=1 USE_QUIC_OPENSSL_COMPAT=1 \
+USE_LUA=1 USE_PCRE2=1
+```
+
+```
 make install
-mkdir /etc/haproxy /var/lib/haproxy
+cd
 ```
 
 ## 准备haproxy配置文件
 
 ```bash
+mkdir /etc/haproxy /var/lib/haproxy
+
 cat << EOF > /etc/haproxy/haproxy.cfg
 global
     log /dev/log local0
@@ -97,7 +119,7 @@ defaults
     timeout http-keep-alive 10s
     timeout check           10s
 frontend apiserver
-    bind *:64433 #非并置的情况下，这里写6443和k8s更贴近
+    bind *:64433 #非并置的情况下，这里写6443和k8s更一致
     mode tcp
     option tcplog
     default_backend apiserver
@@ -136,40 +158,46 @@ systemctl enable haproxy --now
 
 # 部署 Keepalived服务
 
+keepalived提供了一个虚拟IP，需要在所有的控制平面都安装
+
 ## 准备软件包
 
 ```bash
-wget https://www.keepalived.org/software/keepalived-2.2.7.tar.gz
-tar xf keepalived-2.2.7.tar.gz
-cd keepalived-2.2.7
+wget https://www.keepalived.org/software/keepalived-2.3.1.tar.gz
+tar xf keepalived-2.3.1.tar.gz
+cd keepalived-2.3.1/
 ```
 
-安装依赖包
-
-```bash
-yum install libnl libnl-devel libnl3 libnl3-devel libmnl-devel libnftnl-devel libnftnl psmisc -y
-```
+检测依赖包，正常来说，Ubuntu不需要额外做什么，会正常退出
 
 ```bash
 ./configure
+```
+
+```bash
 make
 make install
-mkdir /etc/keepalived
+cd
 ```
 
 ## 准备keepalived配置文件
 
+这是keepalived的检测脚本，主要是判断haproxy是否工作正常，这里需要注意你的网卡名称是否为ens32
+
 ```bash
+mkdir /etc/keepalived
 cat << EOF > /etc/keepalived/check_apiserver.sh
 #!/bin/sh
 systemctl is-active haproxy
 if [ $? -eq 0 ];then
   exit 0
 else
-  systemctl poweroff
+  ip link set ens32 down
 fi
 EOF
 ```
+
+以下为第一台keepalived配置文件样例
 
 ```bash
 cat << EOF > /etc/keepalived/keepalived.conf
@@ -186,20 +214,20 @@ vrrp_script check_apiserver {
 
 vrrp_instance haproxy {
     state MASTER     # 其他机器要写成BACKUP
-    interface ens33
+    interface ens32
     virtual_router_id 20
     priority 100
     authentication {
         auth_type PASS
         auth_pass lixiaohui
     }
-    unicast_src_ip 192.168.30.128 #本机地址
+    unicast_src_ip 192.168.8.3 #本机地址
     unicast_peer {
-        192.168.30.129 #对端地址
-        192.168.30.130 #对端地址
+        192.168.8.4 #对端地址
+        192.168.8.5 #对端地址
     }
     virtual_ipaddress {
-        192.168.30.200
+        192.168.8.200
     }
     track_script {
         check_apiserver
@@ -226,6 +254,7 @@ NotifyAccess=all
 PIDFile=/run/keepalived.pid
 KillMode=process
 EnvironmentFile=-/usr/local/etc/sysconfig/keepalived
+ExecStartPre=/bin/sh -c 'until systemctl is-active haproxy.service; do sleep 1; done'
 ExecStart=/usr/local/sbin/keepalived --dont-fork $KEEPALIVED_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
 
@@ -234,7 +263,7 @@ WantedBy=multi-user.target
 EOF
 ```
 
-启动keepalived服务
+启动keepalived服务的部分先不执行，因为haproxy后端服务器现在全部离线，会导致haproxy服务失败，一旦haproxy服务失败，keepalived会自动断开你的网络，等最起码haproxy后端一台机器上线后再执行keepalived的启动
 
 ```bash
 chmod +x /etc/keepalived/check_apiserver.sh
@@ -245,33 +274,6 @@ systemctl enable keepalived --now
 # 部署高可用Kubernetes
 
 ## 先决条件
-
-### 开通Master防火墙
-
-| 协议  | 方向  | 端口范围      | 目的                      | 使用者                  |
-| --- | --- | --------- | ----------------------- | -------------------- |
-| TCP | 入站  | 6443      | Kubernetes API server   | 所有                   |
-| TCP | 入站  | 2379-2380 | etcd server client API  | kube-apiserver, etcd |
-| TCP | 入站  | 10250     | Kubelet API             | 自身, 控制面              |
-| TCP | 入站  | 10259     | kube-scheduler          | 自身                   |
-| TCP | 入站  | 10257     | kube-controller-manager | 自身                   |
-
-```bash
-firewall-cmd --add-port=6443/tcp --add-port=2379-2380/tcp --add-port=10250/tcp --add-port=10259/tcp --add-port=10257/tcp --add-port=64433/tcp --permanent
-firewall-cmd --reload
-```
-
-### 开通Worker防火墙
-
-| 协议  | 方向  | 端口范围        | 目的                 | 使用者     |
-| --- | --- | ----------- | ------------------ | ------- |
-| TCP | 入站  | 10250       | Kubelet API        | 自身, 控制面 |
-| TCP | 入站  | 30000-32767 | NodePort Services† | 所有      |
-
-```bash
-firewall-cmd --add-port=30000-32767/tcp --add-port=10250/tcp --permanent
-firewall-cmd --reload
-```
 
 ### 禁用交换分区
 
@@ -367,7 +369,7 @@ crictl images
 
 ```bash
 kubeadm init \
---apiserver-advertise-address=192.168.30.128 \
+--apiserver-advertise-address=192.168.8.3 \
 --apiserver-bind-port=6443 \
 --control-plane-endpoint=192.168.30.200:64433 \
 --image-repository=registry.cn-hangzhou.aliyuncs.com/google_containers \
