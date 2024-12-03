@@ -61,8 +61,8 @@ apt update
 ## 安装Containerd
 
 ```bash
-wget https://class-git.myk8s.cn/containerd/nerdctl/releases/download/v2.0.0/nerdctl-full-2.0.0-linux-amd64.tar.gz
-tar Cxzvvf /usr/local nerdctl-full-2.0.0-linux-amd64.tar.gz
+wget https://class-git.myk8s.cn/containerd/nerdctl/releases/download/v2.0.1/nerdctl-full-2.0.1-linux-amd64.tar.gz
+tar Cxzvvf /usr/local nerdctl-full-2.0.1-linux-amd64.tar.gz
 ```
 
 ## 生成配置文件
