@@ -175,18 +175,18 @@ cat > create-k8s.yaml <<'EOF'
     - block:
         - name: Download Containerd on master node
           get_url:
-            url: https://class-git.myk8s.cn/containerd/nerdctl/releases/download/v2.0.0/nerdctl-full-2.0.0-linux-amd64.tar.gz
-            dest: /root/nerdctl-full-2.0.0-linux-amd64.tar.gz
+            url: https://class-git.myk8s.cn/containerd/nerdctl/releases/download/v2.0.1/nerdctl-full-2.0.1-linux-amd64.tar.gz
+            dest: /root/nerdctl-full-2.0.1-linux-amd64.tar.gz
           when: "'master' in group_names"
       rescue:
         - name: Download Containerd on master node again
           get_url:
-            url: https://gh-proxy.com/https://github.com/containerd/nerdctl/releases/download/v2.0.0/nerdctl-full-2.0.0-linux-amd64.tar.gz
-            dest: /root/nerdctl-full-2.0.0-linux-amd64.tar.gz
+            url: https://gh-proxy.com/https://github.com/containerd/nerdctl/releases/download/v2.0.1/nerdctl-full-2.0.1-linux-amd64.tar.gz
+            dest: /root/nerdctl-full-2.0.1-linux-amd64.tar.gz
           when: "'master' in group_names"
     - name: Install containerd on all node
       unarchive:
-        src: /root/nerdctl-full-2.0.0-linux-amd64.tar.gz
+        src: /root/nerdctl-full-2.0.1-linux-amd64.tar.gz
         dest: /usr/local
         copy: yes
     - name: Create /etc/containerd directory
