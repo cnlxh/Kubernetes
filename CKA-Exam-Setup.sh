@@ -203,7 +203,7 @@ function multi_container {
         `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull nginx &` &> /dev/null
         `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull redis  &` &> /dev/null
         `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull memcached &` &> /dev/null
-        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull consul &` &> /dev/null
+        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull httpd &` &> /dev/null
         if ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q nginx;then
           `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull nginx &` &> /dev/null
         elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q redis;then
