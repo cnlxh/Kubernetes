@@ -279,11 +279,11 @@ function multicontainer {
   echo '创建一个pod并包含4个容器题目: 正在判定kucc1 Pod是否包括了4个容器'    
   echo
   if kubectl get pod kucc1 -o yaml 2> /dev/null | grep -E -qi image:.*nginx && kubectl get pod kucc1 -o yaml 2> /dev/null | grep -q image:.*redis && \
-     kubectl get pod kucc1 -o yaml 2> /dev/null | grep -qi image:.*memcached && kubectl get pod kucc1 -o yaml 2> /dev/null | grep -q image:.*busybox;then
+     kubectl get pod kucc1 -o yaml 2> /dev/null | grep -qi image:.*memcached && kubectl get pod kucc1 -o yaml 2> /dev/null | grep -q image:.*httpd;then
     score=$(expr $score + 2 )
-    pass && echo 'kucc1 pod已经同时包含busybox、nginx、memcached、redis'
+    pass && echo 'kucc1 pod已经同时包含httpd、nginx、memcached、redis'
   else
-    fail && echo 'kucc1 pod必须同时包含busybox、nginx、memcached、redis'
+    fail && echo 'kucc1 pod必须同时包含httpd、nginx、memcached、redis'
   fi
   echo
   echo
