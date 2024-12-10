@@ -210,10 +210,10 @@ function multi_container {
           `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull redis &` &> /dev/null
         elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q memcached;then
           `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull memcached &` &> /dev/null
-        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q busybox;then
-          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull busybox &` &> /dev/null
+        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q httpd;then
+          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull httpd &` &> /dev/null
         # else
-        #   echo ERROR: image cannot download, please check your internal or check nginx redis memcached busybox docker image on all nodes
+        #   echo ERROR: image cannot download, please check your internal or check nginx redis memcached httpd docker image on all nodes
         fi
         break
       done
