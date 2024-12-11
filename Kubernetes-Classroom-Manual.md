@@ -61,8 +61,8 @@ apt update
 ## 安装Containerd
 
 ```bash
-wget https://class-git.myk8s.cn/containerd/nerdctl/releases/download/v2.0.1/nerdctl-full-2.0.1-linux-amd64.tar.gz
-tar Cxzvvf /usr/local nerdctl-full-2.0.1-linux-amd64.tar.gz
+wget https://class-git.myk8s.cn/containerd/nerdctl/releases/download/v2.0.2/nerdctl-full-2.0.2-linux-amd64.tar.gz
+tar Cxzvvf /usr/local nerdctl-full-2.0.2-linux-amd64.tar.gz
 ```
 
 ## 生成配置文件
@@ -82,9 +82,9 @@ sed -i '/^\s*\[plugins.'"'"'io.containerd.cri.v1.images'"'"'.registry\]/{n;s|^\(
 课程期间免费的容器加速器，可以打开此页面查看：https://gitee.com/cnlxh/public
 
 ```bash
-mkdir /etc/containerd/certs.d/_default/ -p
-cat > /etc/containerd/certs.d/_default/hosts.toml <<-'EOF'
-server = "https://xxx.xxx.xxx"
+mkdir /etc/containerd/certs.d/docker.io/ -p
+cat > /etc/containerd/certs.d/docker.io/hosts.toml <<-'EOF'
+server = "https://registry-1.docker.io"
 [host."https://xxx.xxx.xxx"]
   capabilities = ["pull", "resolve", "push"]
 EOF
