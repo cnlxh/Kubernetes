@@ -132,7 +132,7 @@ cat > create-k8s.yaml <<'EOF'
           deb https://mirrors.nju.edu.cn/ubuntu focal-security main restricted
           deb https://mirrors.nju.edu.cn/ubuntu focal-security universe
           deb https://mirrors.nju.edu.cn/ubuntu focal-security multiverse
-          deb https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.31/deb /
+          deb https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.32/deb /
         dest: /etc/apt/sources.list
     - name: Deoloy k8s gpg key
       apt_key:
@@ -175,18 +175,18 @@ cat > create-k8s.yaml <<'EOF'
     - block:
         - name: Download Containerd on master node
           get_url:
-            url: https://class-git.myk8s.cn/containerd/nerdctl/releases/download/v2.0.1/nerdctl-full-2.0.1-linux-amd64.tar.gz
-            dest: /root/nerdctl-full-2.0.1-linux-amd64.tar.gz
+            url: https://class-git.myk8s.cn/containerd/nerdctl/releases/download/v2.0.2/nerdctl-full-2.0.2-linux-amd64.tar.gz
+            dest: /root/nerdctl-full-2.0.2-linux-amd64.tar.gz
           when: "'master' in group_names"
       rescue:
         - name: Download Containerd on master node again
           get_url:
-            url: https://gh-proxy.com/https://github.com/containerd/nerdctl/releases/download/v2.0.1/nerdctl-full-2.0.1-linux-amd64.tar.gz
-            dest: /root/nerdctl-full-2.0.1-linux-amd64.tar.gz
+            url: https://gh-proxy.com/https://github.com/containerd/nerdctl/releases/download/v2.0.2/nerdctl-full-2.0.2-linux-amd64.tar.gz
+            dest: /root/nerdctl-full-2.0.2-linux-amd64.tar.gz
           when: "'master' in group_names"
     - name: Install containerd on all node
       unarchive:
-        src: /root/nerdctl-full-2.0.1-linux-amd64.tar.gz
+        src: /root/nerdctl-full-2.0.2-linux-amd64.tar.gz
         dest: /usr/local
         copy: yes
     - name: Create /etc/containerd directory
@@ -209,7 +209,7 @@ cat > create-k8s.yaml <<'EOF'
     - name: Create hosts.toml file for Docker hub mirror
       copy:
         content: |
-          server = "https://class-docker.myk8s.cn"
+          server = "https://registry-1.docker.io"
           [host."https://class-docker.myk8s.cn"]
             capabilities = ["pull", "resolve", "push"]
         dest: /etc/containerd/certs.d/docker.io/hosts.toml
@@ -259,9 +259,9 @@ cat > create-k8s.yaml <<'EOF'
     - name: install kubeadm kubectl kubelet
       package:
         name:
-          - kubeadm=1.31.0-1.1
-          - kubelet=1.31.0-1.1
-          - kubectl=1.31.0-1.1
+          - kubeadm=1.32.0-1.1
+          - kubelet=1.32.0-1.1
+          - kubectl=1.32.0-1.1
           - sshpass
         state: present
       register: result
