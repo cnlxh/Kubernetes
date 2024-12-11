@@ -140,7 +140,7 @@ cat > create-k8s.yaml <<'EOF'
         state: present
       loop:
         - https://mirrors.nju.edu.cn/docker-ce/linux/ubuntu/gpg
-        - https://mirrors.nju.edu.cn/kubernetes/core%3A/stable%3A/v1.30/deb/Release.key
+        - https://mirrors.nju.edu.cn/kubernetes/core%3A/stable%3A/v1.32/deb/Release.key
     - name: Update apt sources
       shell: apt update
       register: result
