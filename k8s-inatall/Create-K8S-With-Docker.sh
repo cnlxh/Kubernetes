@@ -302,6 +302,7 @@ cat > create-k8s.yaml <<'EOF'
           - kubelet=1.32.0-1.1
           - kubectl=1.32.0-1.1
           - sshpass
+          - socat
         state: present
       register: result
       until: result.failed == false
