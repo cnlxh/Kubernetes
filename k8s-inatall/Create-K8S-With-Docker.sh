@@ -133,7 +133,7 @@ cat > create-k8s.yaml <<'EOF'
           deb https://mirrors.nju.edu.cn/ubuntu focal-security main restricted
           deb https://mirrors.nju.edu.cn/ubuntu focal-security universe
           deb https://mirrors.nju.edu.cn/ubuntu focal-security multiverse
-          deb https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.31/deb /
+          deb https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.32/deb /
         dest: /etc/apt/sources.list
     - name: Deoloy k8s gpg key
       apt_key:
@@ -141,7 +141,7 @@ cat > create-k8s.yaml <<'EOF'
         state: present
       loop:
         - https://mirrors.nju.edu.cn/docker-ce/linux/ubuntu/gpg
-        - https://mirrors.nju.edu.cn/kubernetes/core%3A/stable%3A/v1.30/deb/Release.key
+        - https://mirrors.nju.edu.cn/kubernetes/core%3A/stable%3A/v1.32/deb/Release.key
     - name: Update apt sources
       shell: apt update
       register: result
@@ -298,9 +298,9 @@ cat > create-k8s.yaml <<'EOF'
     - name: install kubeadm kubectl kubelet
       package:
         name:
-          - kubeadm=1.31.0-1.1
-          - kubelet=1.31.0-1.1
-          - kubectl=1.31.0-1.1
+          - kubeadm=1.32.0-1.1
+          - kubelet=1.32.0-1.1
+          - kubectl=1.32.0-1.1
           - sshpass
         state: present
       register: result
