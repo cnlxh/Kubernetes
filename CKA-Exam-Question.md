@@ -774,8 +774,8 @@ spec:
     image: redis
   - name: memcached
     image: memcached
-  - name: httpd
-    image: httpd
+  - name: registry
+    image: registry
 ```
 
 ```bash
