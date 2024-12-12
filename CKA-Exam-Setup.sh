@@ -43,7 +43,7 @@ function rbac {
 function node_maintenance {
     echo 'Preparing node maintenance'
     # disable worker1 for fixnode question
-    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 'systemctl disable kubelet --now' &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 'systemctl disable kubelet containerd --now' &> /dev/null
 
 }
 
@@ -69,8 +69,8 @@ function networkpolicy {
     echo 'Preparing internal and corp namespace'
     kubectl create namespace internal &> /dev/null
     kubectl create namespace corp &> /dev/null
-    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-master docker pull nginx &> /dev/null
-    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker2 docker pull nginx &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-master nerdctl pull -q nginx &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker2 nerdctl pull -q nginx &> /dev/null
 
 
 
@@ -147,10 +147,10 @@ function ingress {
     for host in k8s-master k8s-worker2 ;do
       while true;do
         sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host crictl pull registry.cn-shanghai.aliyuncs.com/cnlxh/ping &> /dev/null
-        if sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q ping;then
+        if sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl images | grep -q ping;then
             break
         else
-           systemctl restart docker &> /dev/null
+           systemctl restart containerd &> /dev/null
            sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host crictl pull registry.cn-shanghai.aliyuncs.com/cnlxh/ping &> /dev/null
            break
         fi
@@ -200,20 +200,20 @@ function multi_container {
     echo 'Preparing multi container image'
     for host in k8s-master k8s-worker2 ;do
       while true;do
-        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull nginx &` &> /dev/null
-        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull redis  &` &> /dev/null
-        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull memcached &` &> /dev/null
-        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull httpd &` &> /dev/null
-        if ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q nginx;then
-          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull nginx &` &> /dev/null
-        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q redis;then
-          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull redis &` &> /dev/null
-        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q memcached;then
-          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull memcached &` &> /dev/null
-        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker images | grep -q httpd;then
-          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host docker pull httpd &` &> /dev/null
+        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q nginx &` &> /dev/null
+        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q redis  &` &> /dev/null
+        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q memcached &` &> /dev/null
+        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q httpd &` &> /dev/null
+        if ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl images | grep -q nginx;then
+          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q nginx &` &> /dev/null
+        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl images | grep -q redis;then
+          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q redis &` &> /dev/null
+        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl images | grep -q memcached;then
+          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q memcached &` &> /dev/null
+        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl images | grep -q httpd;then
+          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q httpd &` &> /dev/null
         # else
-        #   echo ERROR: image cannot download, please check your internal or check nginx redis memcached httpd docker image on all nodes
+        #   echo ERROR: image cannot download, please check your internal or check nginx redis memcached httpd container image on all nodes
         fi
         break
       done
@@ -335,7 +335,7 @@ function fixnode {
     echo 'Preparing k8s-worker1 state into NotReady and SchedulingDisabled'
     kubectl drain k8s-worker1 --delete-emptydir-data --ignore-daemonsets &> /dev/null
     sleep 10
-    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 systemctl disable kubelet docker.service docker.socket --now &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 systemctl disable kubelet containerd --now &> /dev/null
 }
 
 # Excution for Preparing
