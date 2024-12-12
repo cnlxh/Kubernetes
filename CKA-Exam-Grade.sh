@@ -131,23 +131,23 @@ function node_maintenance {
 function upgrade {
   echo '集群升级题目：正在判定集群是否升级成功' 
   echo
-  if kubectl get nodes | grep k8s-master | grep -q 1.31.1;then
+  if kubectl get nodes | grep k8s-master | grep -q 1.32.1;then
     score=$(expr $score + 2 )
-    pass && echo 'k8s-master已升级到1.31.1'
+    pass && echo 'k8s-master已升级到1.32.1'
   else
-    fail && echo 'k8s-master没有成功升级到1.31.1'
+    fail && echo 'k8s-master没有成功升级到1.32.1'
   fi  
-  if kubectl version 2> /dev/null | grep -q v1.31.1 &> /dev/null &> /dev/null;then
+  if kubectl version 2> /dev/null | grep -q v1.32.1 &> /dev/null &> /dev/null;then
     score=$(expr $score + 2 )
-    pass && echo 'kubectl已升级到1.31.1'
+    pass && echo 'kubectl已升级到1.32.1'
   else
-    fail && echo 'kubectl没有成功升级到1.31.1'
+    fail && echo 'kubectl没有成功升级到1.32.1'
   fi  
-  if kubelet --version | grep -q v1.31.1 &> /dev/null;then
+  if kubelet --version | grep -q v1.32.1 &> /dev/null;then
     score=$(expr $score + 2 )
-    pass && echo 'kubelet已升级到1.31.1'
+    pass && echo 'kubelet已升级到1.32.1'
   else
-    fail && echo 'kubelet没有成功升级到1.31.1'
+    fail && echo 'kubelet没有成功升级到1.32.1'
   fi  
   echo
   echo  

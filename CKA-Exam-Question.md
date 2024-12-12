@@ -113,9 +113,9 @@ root@k8s-master:~# systemctl restart kubelet.service
 
 root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-k8s-master    Ready                         control-plane   11h   v1.31.0
-k8s-worker1   NotReady,SchedulingDisabled   worker          11h   v1.31.0
-k8s-worker2   Ready                         worker          11h   v1.31.0
+k8s-master    Ready                         control-plane   11h   v1.32.0
+k8s-worker1   NotReady,SchedulingDisabled   worker          11h   v1.32.0
+k8s-worker2   Ready                         worker          11h   v1.32.0
 ```
 
 # Q2: RBAC
@@ -226,9 +226,9 @@ root@k8s-master:~# kubectl cordon k8s-master
 
 root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.31.0
-k8s-worker1   NotReady,SchedulingDisabled   worker          11h   v1.31.0
-k8s-worker2   Ready                         worker          11h   v1.31.0
+k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.32.0
+k8s-worker1   NotReady,SchedulingDisabled   worker          11h   v1.32.0
+k8s-worker2   Ready                         worker          11h   v1.32.0
 ```
 
 将现有工作负载驱赶到其他节点
@@ -239,7 +239,7 @@ root@k8s-master:~# kubectl drain k8s-master --delete-emptydir-data --ignore-daem
 
 # Q4: Upgrading kubeadm clusters
 
-Given an existing kubernetes cluster running version 1.31.0,upgrade all of the Kubernetes control plane and node components on the master node only to version 1.31.1,Please do not upgrade etcd database.
+Given an existing kubernetes cluster running version 1.32.0,upgrade all of the Kubernetes control plane and node components on the master node only to version 1.32.1,Please do not upgrade etcd database.
 
 You are also expected to upgrade kubelete and kubectl on the master node.
 
@@ -249,7 +249,7 @@ You are also expected to upgrade kubelete and kubectl on the master node.
 
 Q4 中文题目：
 
-现有的 Kubernetes 集群正在运行的版本是 1.31.0，仅将主节点上的所有 kubernetes 控制面板和组件升级到版本 1.31.1，请勿升级etcd数据库， 另外，在主节点上升级 kubelet 和 kubectl
+现有的 Kubernetes 集群正在运行的版本是 1.32.0，仅将主节点上的所有 kubernetes 控制面板和组件升级到版本 1.32.1，请勿升级etcd数据库， 另外，在主节点上升级 kubelet 和 kubectl
 
 ---
 
@@ -264,19 +264,19 @@ root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```bash
 root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.31.0
-k8s-worker1   NotReady,SchedulingDisabled   worker          11h   v1.31.0
-k8s-worker2   Ready                         worker          11h   v1.31.0
+k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.32.0
+k8s-worker1   NotReady,SchedulingDisabled   worker          11h   v1.32.0
+k8s-worker2   Ready                         worker          11h   v1.32.0
 
 root@k8s-master:~# kubelet --version
-Kubernetes v1.31.0
+Kubernetes v1.32.0
 
 root@k8s-master:~# kubectl version
-Client Version: version.Info {Major:"1", Minor:"31", GitVersion:"v1.31.0"}
-Server Version: version.Info {Major:"1", Minor:"31", GitVersion:"v1.31.0"}
+Client Version: version.Info {Major:"1", Minor:"31", GitVersion:"v1.32.0"}
+Server Version: version.Info {Major:"1", Minor:"31", GitVersion:"v1.32.0"}
 
 root@k8s-master:~# kubeadm version
-kubeadm version: &version.Info {Major:"1", Minor:"31", GitVersion:"v1.31.0"}
+kubeadm version: &version.Info {Major:"1", Minor:"31", GitVersion:"v1.32.0"}
 ```
 
 禁用新的调度
@@ -296,14 +296,14 @@ root@k8s-master:~# kubectl drain k8s-master --delete-emptydir-data --ignore-daem
 ```bash
 root@k8s-master:~# apt-mark unhold kubeadm
 root@k8s-master:~# apt update
-root@k8s-master:~# apt install kubeadm=1.31.1-1.1 -y
+root@k8s-master:~# apt install kubeadm=1.32.1-1.1 -y
 Reading package lists... Done
-Setting up kubeadm (1.31.1-1.1)
+Setting up kubeadm (1.32.1-1.1)
 ...
 root@k8s-master:~# apt-mark hold kubeadm
 
 root@k8s-master:~# kubeadm version
-kubeadm version: &version.Info {Major:"1", Minor:"31", GitVersion:"v1.31.1"}
+kubeadm version: &version.Info {Major:"1", Minor:"31", GitVersion:"v1.32.1"}
 ```
 
 查询现有可升级的版本
@@ -313,18 +313,18 @@ root@k8s-master:~# kubeadm upgrade plan
 ...
 You can now apply the upgrade by executing the following command:
 
-        kubeadm upgrade apply v1.31.1
+        kubeadm upgrade apply v1.32.1
 ```
 
 完成版本升级，记得指定不升级etcd的参数，有些时候要求不升级DNS、CNI等，只需指定etcd跳过参数，忽略额外要求即可
 
 ```bash
 root@k8s-master:~# apt-mark unhold kubeadm
-root@k8s-master:~# kubeadm upgrade apply v1.31.1 --etcd-upgrade=false
+root@k8s-master:~# kubeadm upgrade apply v1.32.1 --etcd-upgrade=false
 ...
 [upgrade] Are you sure you want to proceed? [y/N]: y
 ...
-[upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.31.1". Enjoy!
+[upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.32.1". Enjoy!
 
 [upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
 ```
@@ -334,7 +334,7 @@ root@k8s-master:~# kubeadm upgrade apply v1.31.1 --etcd-upgrade=false
 ```bash
 root@k8s-master:~# apt-mark unhold kubelet
 root@k8s-master:~# apt-mark unhold kubectl
-root@k8s-master:~# apt install kubelet=1.31.1-1.1 kubectl=1.31.1-1.1 -y
+root@k8s-master:~# apt install kubelet=1.32.1-1.1 kubectl=1.32.1-1.1 -y
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
@@ -350,9 +350,9 @@ root@k8s-master:~# systemctl daemon-reload
 root@k8s-master:~# systemctl restart kubelet.service
 root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.31.1
-k8s-worker1   NotReady,SchedulingDisabled   worker          11h   v1.31.0
-k8s-worker2   Ready                         worker          11h   v1.31.0
+k8s-master    Ready,SchedulingDisabled      control-plane   11h   v1.32.1
+k8s-worker1   NotReady,SchedulingDisabled   worker          11h   v1.32.0
+k8s-worker2   Ready                         worker          11h   v1.32.0
 ```
 
 这里要格外注意，正式考试的时候一定要对你刚升级的节点执行uncordon，不然本题不会得分
@@ -362,9 +362,9 @@ k8s-worker2   Ready                         worker          11h   v1.31.0
 root@k8s-master:~# kubectl uncordon k8s-master
 root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE   VERSION
-k8s-master     Ready                         control-plane   19m   v1.31.1
-k8s-worker1    NotReady,SchedulingDisabled   worker          17m   v1.31.0
-k8s-worker2    Ready                         worker          16m   v1.31.0
+k8s-master     Ready                         control-plane   19m   v1.32.1
+k8s-worker1    NotReady,SchedulingDisabled   worker          17m   v1.32.0
+k8s-worker2    Ready                         worker          16m   v1.32.0
 ```
 
 # Q5: Create NetworkPolicy
@@ -687,9 +687,9 @@ kubectl create -f assignpod.yml
 ```bash
 root@k8s-master:~# kubectl get nodes --show-labels
 NAME          STATUS     ROLES           AGE   VERSION   LABELS
-k8s-master    Ready      control-plane   14h   v1.31.1   ...
-k8s-worker1   NotReady   worker          14h   v1.31.0   ...
-k8s-worker2   Ready      worker          14h   v1.31.0   disk=spinning
+k8s-master    Ready      control-plane   14h   v1.32.1   ...
+k8s-worker1   NotReady   worker          14h   v1.32.0   ...
+k8s-worker2   Ready      worker          14h   v1.32.0   disk=spinning
 ```
 
 查询pod是否如期调度
@@ -1155,9 +1155,9 @@ root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```bash
 root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE    VERSION
-k8s-master    Ready,SchedulingDisabled      control-plane   2d1h   v1.31.1
-k8s-worker1   NotReady,SchedulingDisabled   worker          2d1h   v1.31.0
-k8s-worker2   Ready                         worker          2d1h   v1.31.0
+k8s-master    Ready,SchedulingDisabled      control-plane   2d1h   v1.32.1
+k8s-worker1   NotReady,SchedulingDisabled   worker          2d1h   v1.32.0
+k8s-worker2   Ready                         worker          2d1h   v1.32.0
 ```
 
 描述一下节点，看看事件，发现kubelet服务停止了
@@ -1176,47 +1176,7 @@ Conditions:
 
 ```
 
-一般kubelet服务不启动，也有可能的runtime的问题，顺便查询docker服务，发现也没启动
-
-```bash
-root@k8s-worker1:~# systemctl status docker
-● docker.service - Docker Application Container Engine
-     Loaded: loaded (/lib/systemd/system/docker.service; disabled; vendor preset: enabled)
-     Active: inactive (dead) since Tue 2022-12-06 14:08:47 UTC; 1s ago
-```
-
-修复docker以及docker垫片服务状态之后，再修复kubelet，最后记得enable
-
-```bash
-root@k8s-master:~# ssh root@k8s-worker1
-root@k8s-worker1:~# systemctl start docker 
-root@k8s-worker1:~# systemctl start cri-docker
-root@k8s-worker1:~# systemctl start kubelet 
-root@k8s-worker1:~# systemctl enable kubelet docker cri-docker
-```
-
-**另外请注意，有同学反馈考试时有遇到runtime不是docker，而是containerd的情况，所以考试时，灵活一些，看看到底是docker还是containerd，具体可以docker images看看是否有考试过程中的镜像，或者以下方式查询：**
-
-```bash
-root@k8s-master:~# kubectl describe nodes k8s-worker1 | grep -A 10 'System Info'
-System Info:
-  Machine ID:                 77b031532486421d9571f82739654f48
-  System UUID:                2dff4d56-861e-193b-d91f-a975eb9f0d12
-  Boot ID:                    728e4c89-791e-422d-9b1a-bca1c1c4f345
-  Kernel Version:             5.4.0-125-generic
-  OS Image:                   Ubuntu 20.04.5 LTS
-  Operating System:           linux
-  Architecture:               amd64
-  Container Runtime Version:  docker://23.0.1
-  Kubelet Version:            v1.31.1
-  Kube-Proxy Version:         v1.31.1
-```
-
-Container Runtime Version:  docker://23.0.1
-
-可以看出是docker的23.0.1版本，而非containerd，当然，本题目中具体是哪个节点不正常，就去describe哪个节点
-
-如果 Container Runtime Version 这里写的是containerd，就做以下操作
+一般kubelet服务不启动，也有可能的runtime的问题，顺便查询containerd服务，发现也没启动
 
 ```bash
 root@k8s-master:~# ssh root@k8s-worker1

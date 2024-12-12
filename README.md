@@ -75,9 +75,9 @@ https://gitee.com/cnlxh/Kubernetes/blob/master/Docker-Images-Mirror.md
         ```bash
         root@k8s-master:~# kubectl get nodes
         NAME          STATUS   ROLES           AGE     VERSION
-        k8s-master    Ready    control-plane   7d17h   v1.31.0
-        k8s-worker1   Ready    worker          7d17h   v1.31.0
-        k8s-worker2   Ready    worker          7d17h   v1.31.0
+        k8s-master    Ready    control-plane   7d17h   v1.32.0
+        k8s-worker1   Ready    worker          7d17h   v1.32.0
+        k8s-worker2   Ready    worker          7d17h   v1.32.0
         ```
 
     2. 执行脚本来部署练习环境
