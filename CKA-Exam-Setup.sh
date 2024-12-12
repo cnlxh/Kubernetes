@@ -69,10 +69,6 @@ function networkpolicy {
     echo 'Preparing internal and corp namespace'
     kubectl create namespace internal &> /dev/null
     kubectl create namespace corp &> /dev/null
-    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-master nerdctl pull -q nginx &> /dev/null
-    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker2 nerdctl pull -q nginx &> /dev/null
-
-
 
 echo 'Preparing pod in internal'
 cat > /root/internlpod.yaml <<'EOF'
@@ -143,19 +139,7 @@ function ingress {
     echo 'Preparing ing-internal namespace'
     kubectl create namespace ing-internal &> /dev/null
 
-    echo 'Preparing "ping" image for pod'
-    for host in k8s-master k8s-worker2 ;do
-      while true;do
-        sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host crictl pull registry.cn-shanghai.aliyuncs.com/cnlxh/ping &> /dev/null
-        if sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl images | grep -q ping;then
-            break
-        else
-           systemctl restart containerd &> /dev/null
-           sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host crictl pull registry.cn-shanghai.aliyuncs.com/cnlxh/ping &> /dev/null
-           break
-        fi
-      done
-    done
+    echo 'Preparing hi service'
 cat > /root/hipod.yaml <<'EOF'
 apiVersion: apps/v1
 kind: Deployment
@@ -163,7 +147,7 @@ metadata:
   name: hi
   namespace: ing-internal
 spec:
-  replicas: 1  # Adjust the number of replicas as needed
+  replicas: 1
   selector:
     matchLabels:
       app: hi
@@ -174,11 +158,15 @@ spec:
     spec:
       containers:
         - name: hi
-          image: registry.cn-shanghai.aliyuncs.com/cnlxh/ping
+          image: nginx
+          args: [
+            "/bin/sh", "-c",
+            "echo 'hi' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;' && while true; do echo hi > /usr/share/nginx/html/index.html; sleep 3600; done"
+          ]
 EOF
 kubectl create -f /root/hipod.yaml &> /dev/null
-rm -rf /root/hipod.yaml    
-kubectl expose deployment hi --type=NodePort --port=5678 --target-port=5678 -n ing-internal &> /dev/null
+rm -rf /root/hipod.yaml
+kubectl expose deployment hi --type=NodePort --port=5678 --target-port=80 -n ing-internal &> /dev/null
 }
 
 function scale {
@@ -198,26 +186,6 @@ function health_node_count {
 
 function multi_container {
     echo 'Preparing multi container image'
-    for host in k8s-master k8s-worker2 ;do
-      while true;do
-        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q nginx &` &> /dev/null
-        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q redis  &` &> /dev/null
-        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q memcached &` &> /dev/null
-        `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q httpd &` &> /dev/null
-        if ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl images | grep -q nginx;then
-          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q nginx &` &> /dev/null
-        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl images | grep -q redis;then
-          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q redis &` &> /dev/null
-        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl images | grep -q memcached;then
-          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q memcached &` &> /dev/null
-        elif ! sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl images | grep -q httpd;then
-          `sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@$host nerdctl pull -q httpd &` &> /dev/null
-        # else
-        #   echo ERROR: image cannot download, please check your internal or check nginx redis memcached httpd container image on all nodes
-        fi
-        break
-      done
-    done
 }
 
 function pv {
@@ -291,7 +259,16 @@ spec:
     spec:
       containers:
         - name: foobar
-          image: registry.cn-shanghai.aliyuncs.com/cnlxh/bar
+          image: busybox
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "$(date '+%Y-%m-%d %H:%M:%S') INFO  application started"
+              echo "$(date '+%Y-%m-%d %H:%M:%S') WARNING  new version available"
+              echo "$(date '+%Y-%m-%d %H:%M:%S') ERROR  unable-to-access-website"
+              echo "$(date '+%Y-%m-%d %H:%M:%S') INFO  exiting application"              
+              sleep infinity
 EOF
 kubectl apply -f /root/foobarpod.yaml &> /dev/null
 rm -rf /root/foobarpod.yaml
@@ -355,6 +332,35 @@ if ! kubectl get nodes &> /dev/null;then
 fi
 break
 done
+
+echo
+
+read -p "Please input your Docker Image Mirror address: " dockerhub_mirror
+
+echo
+
+read -p "Please input your Docker Hub username: " dockerhub_username
+
+echo
+
+read -sp "Please input your Docker Hub password: " dockerhub_password
+
+echo
+echo
+echo 'Now login your mirror address with your password'
+
+nerdctl login $dockerhub_mirror -u $dockerhub_username -p $dockerhub_password &> /dev/null
+
+if [ $? -eq 0 ];then
+    echo
+	  echo 'Login result: OK, Login Succeeded'
+    echo
+  else
+    echo
+	  echo echo -e "\033[1;31;5mLogin Failed, You can ignore that if your mirror address does not support login\033[0m"
+    echo
+    sleep 10
+fi
 
 rbac
 node_maintenance
