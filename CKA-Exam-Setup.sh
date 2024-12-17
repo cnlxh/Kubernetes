@@ -43,7 +43,7 @@ function rbac {
 function node_maintenance {
     echo 'Preparing node maintenance'
     # disable worker1 for fixnode question
-    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 'systemctl disable kubelet containerd --now' &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 'systemctl disable kubelet docker cri-docker --now' &> /dev/null
 
 }
 
@@ -312,7 +312,7 @@ function fixnode {
     echo 'Preparing k8s-worker1 state into NotReady and SchedulingDisabled'
     kubectl drain k8s-worker1 --delete-emptydir-data --ignore-daemonsets &> /dev/null
     sleep 10
-    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 systemctl disable kubelet containerd --now &> /dev/null
+    sshpass -p vagrant ssh -A -g -o StrictHostKeyChecking=no root@k8s-worker1 systemctl disable kubelet docker cri-docker --now &> /dev/null
 }
 
 # Excution for Preparing
@@ -349,7 +349,7 @@ echo
 echo
 echo 'Now login your mirror address with your password'
 
-nerdctl login $dockerhub_mirror -u $dockerhub_username -p $dockerhub_password &> /dev/null
+docker login $dockerhub_mirror -u $dockerhub_username -p $dockerhub_password &> /dev/null
 
 if [ $? -eq 0 ];then
     echo
