@@ -1122,6 +1122,7 @@ default     foobar-77d66f5977-zs9h7   1m           9Mi
 root@k8s-master:~# echo 'foobar-77d66f5977-zs9h7' > /opt/findhighcpu.txt
 ```
 
+
 # Q17: Fixing kubernetes node state
 
 A kubernetes worker node, named k8s-worker1 is in state NotReady. Investigate why this is the case, and perform any appropriate steps to bring the node to a Ready state,ensuring that any changes are made permanent.
@@ -1155,9 +1156,9 @@ root@k8s-master:~# kubectl config use-context kubernetes-admin@kubernetes
 ```bash
 root@k8s-master:~# kubectl get nodes
 NAME          STATUS                        ROLES           AGE    VERSION
-k8s-master    Ready,SchedulingDisabled      control-plane   2d1h   v1.32.1
-k8s-worker1   NotReady,SchedulingDisabled   worker          2d1h   v1.32.0
-k8s-worker2   Ready                         worker          2d1h   v1.32.0
+k8s-master    Ready,SchedulingDisabled      control-plane   2d1h   v1.31.1
+k8s-worker1   NotReady,SchedulingDisabled   worker          2d1h   v1.31.0
+k8s-worker2   Ready                         worker          2d1h   v1.31.0
 ```
 
 描述一下节点，看看事件，发现kubelet服务停止了
@@ -1176,7 +1177,47 @@ Conditions:
 
 ```
 
-一般kubelet服务不启动，也有可能的runtime的问题，顺便查询containerd服务，发现也没启动
+一般kubelet服务不启动，也有可能的runtime的问题，顺便查询docker服务，发现也没启动
+
+```bash
+root@k8s-worker1:~# systemctl status docker
+● docker.service - Docker Application Container Engine
+     Loaded: loaded (/lib/systemd/system/docker.service; disabled; vendor preset: enabled)
+     Active: inactive (dead) since Tue 2022-12-06 14:08:47 UTC; 1s ago
+```
+
+修复docker以及docker垫片服务状态之后，再修复kubelet，最后记得enable
+
+```bash
+root@k8s-master:~# ssh root@k8s-worker1
+root@k8s-worker1:~# systemctl start docker 
+root@k8s-worker1:~# systemctl start cri-docker
+root@k8s-worker1:~# systemctl start kubelet 
+root@k8s-worker1:~# systemctl enable kubelet docker cri-docker
+```
+
+**另外请注意，有同学反馈考试时有遇到runtime不是docker，而是containerd的情况，所以考试时，灵活一些，看看到底是docker还是containerd，具体可以docker images看看是否有考试过程中的镜像，或者以下方式查询：**
+
+```bash
+root@k8s-master:~# kubectl describe nodes k8s-worker1 | grep -A 10 'System Info'
+System Info:
+  Machine ID:                 77b031532486421d9571f82739654f48
+  System UUID:                2dff4d56-861e-193b-d91f-a975eb9f0d12
+  Boot ID:                    728e4c89-791e-422d-9b1a-bca1c1c4f345
+  Kernel Version:             5.4.0-125-generic
+  OS Image:                   Ubuntu 20.04.5 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  docker://23.0.1
+  Kubelet Version:            v1.31.1
+  Kube-Proxy Version:         v1.31.1
+```
+
+Container Runtime Version:  docker://23.0.1
+
+可以看出是docker的23.0.1版本，而非containerd，当然，本题目中具体是哪个节点不正常，就去describe哪个节点
+
+如果 Container Runtime Version 这里写的是containerd，就做以下操作
 
 ```bash
 root@k8s-master:~# ssh root@k8s-worker1
