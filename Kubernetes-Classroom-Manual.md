@@ -52,60 +52,7 @@ EOF
 apt update
 ```
 
-我们课程中，目前用的是containerd，所以请不要再去做Docker CE和CRI-Docker的部分
-
-# Containerd 部署
-
-**为了节约网络流量和时间，这一步只在k8s-master这一台机器上完成，后续如需练习worker节点加入到k8s集群的操作，在k8s-master上初始化好k8s集群后，再来其他节点完成这个步骤也来得及**
-
-## 安装Containerd
-
-```bash
-wget https://class-git.myk8s.cn/containerd/nerdctl/releases/download/v2.0.2/nerdctl-full-2.0.2-linux-amd64.tar.gz
-tar Cxzvvf /usr/local nerdctl-full-2.0.2-linux-amd64.tar.gz
-```
-
-## 生成配置文件
-
-```bash
-mkdir /etc/containerd
-containerd config default > /etc/containerd/config.toml
-#沙盒镜像改为国内
-sed -i '/^\s*\[plugins.'"'"'io.containerd.cri.v1.images'"'"'.pinned_images\]/{n;s|^\(\s*\)sandbox = .*$|\1sandbox = '"'"'registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.10'"'"'|}' /etc/containerd/config.toml
-
-#添加加速器地址
-sed -i '/^\s*\[plugins.'"'"'io.containerd.cri.v1.images'"'"'.registry\]/{n;s|^\(\s*\)config_path = .*$|\1config_path = '"'"'/etc/containerd/certs.d'"'"'|}' /etc/containerd/config.toml
-```
-
-## 使用镜像加速器
-
-课程期间免费的容器加速器，可以打开此页面查看：https://gitee.com/cnlxh/public
-
-```bash
-mkdir /etc/containerd/certs.d/docker.io/ -p
-cat > /etc/containerd/certs.d/docker.io/hosts.toml <<-'EOF'
-server = "https://registry-1.docker.io"
-[host."https://xxx.xxx.xxx"]
-  capabilities = ["pull", "resolve", "push"]
-EOF
-```
-
-## 启动Containerd服务
-
-```bash
-systemctl daemon-reload
-systemctl enable --now containerd
-systemctl enable --now buildkit
-```
-
-## 添加nerdctl命令自动补齐功能
-
-```bash
-nerdctl completion bash > /etc/bash_completion.d/nerdctl
-source /etc/bash_completion.d/nerdctl
-```
-
-**请注意，以下所有Docker部分都只作为文档留存，不在课程中使用**
+我们课程中，目前用的是Docker CE和CRI-Docker，所以请不要再去做containerd的部分
 
 # Docker CE 部署
 
@@ -153,30 +100,78 @@ sed -i 's/ExecStart=.*/ExecStart=\/usr\/bin\/cri-dockerd --container-runtime-end
 systemctl daemon-reload
 systemctl restart cri-docker.service
 systemctl enable cri-docker.service
+
 ```
 
-除非我明确要求，不然不要做下面所有涉及到Docker命令的部分
+除非我明确要求，不然不要做下面的Containerd的所有部分
+
+# Containerd 部署
+
+## 安装Containerd
+
+```bash
+wget https://class-git.myk8s.cn/containerd/nerdctl/releases/download/v1.7.7/nerdctl-full-1.7.7-linux-amd64.tar.gz
+tar Cxzvvf /usr/local nerdctl-full-1.7.7-linux-amd64.tar.gz
+```
+
+## 生成配置文件
+
+```bash
+mkdir /etc/containerd
+containerd config default > /etc/containerd/config.toml
+#使用systemd
+sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+#沙盒镜像改为国内
+sed -i 's|sandbox_image = "registry.k8s.io/pause:3.8"|sandbox_image = "registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.10"|' /etc/containerd/config.toml
+#添加加速器地址
+sed -i '/\[plugins."io.containerd.grpc.v1.cri".registry\]/{n;s|config_path = ""|config_path = "/etc/containerd/certs.d"|}' /etc/containerd/config.toml
+```
+
+## 使用镜像加速器
+
+```bash
+mkdir /etc/containerd/certs.d/docker.io -p
+cat > /etc/containerd/certs.d/docker.io/hosts.toml <<-'EOF'
+server = "https://xxx.xxx.xxx"
+[host."https://xxx.xxx.xxx"]
+  capabilities = ["pull", "resolve", "push"]
+EOF
+```
+
+## 启动Containerd服务
+
+```bash
+systemctl daemon-reload
+systemctl enable --now containerd
+systemctl enable --now buildkit
+```
+
+## 添加nerdctl命令自动补齐功能
+
+```bash
+nerdctl completion bash > /etc/bash_completion.d/nerdctl
+source /etc/bash_completion.d/nerdctl
+```
 
 # 创建第一个容器
 
 ## 运行容器
 
 ```bash
-docker run -d -p 8000:80 --name container1 nginx
+docker run -d -p 8000:80 --name container1 registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
 docker ps
 ```
 
 输出
-
 ```text
 CONTAINER ID    IMAGE                             COMMAND                   CREATED          STATUS    PORTS                   NAMES
-eea8ed66990c    nginx:latest    "/docker-entrypoint.…"    7 seconds ago    Up        0.0.0.0:8000->80/tcp    container1    
+eea8ed66990c    registry.cn-shanghai.aliyuncs.com/cnlxh/nginx:latest    "/docker-entrypoint.…"    7 seconds ago    Up        0.0.0.0:8000->80/tcp    container1    
 ```
 
 如果用的是containerd，运行容器的命令就是下面这样的
 
 ```bash
-nerdctl run -d -p 8000:80 --name container1 nginx
+nerdctl run -d -p 8000:80 --name container1 registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
 nerdctl ps
 ```
 
@@ -184,7 +179,7 @@ nerdctl ps
 
 ```text
 CONTAINER ID    IMAGE                                                   COMMAND                   CREATED           STATUS    PORTS                   NAMES
-1353d09a9df3    nginx:latest    "/docker-entrypoint.…"    21 seconds ago    Up        0.0.0.0:8000->80/tcp    container1
+1353d09a9df3    registry.cn-shanghai.aliyuncs.com/cnlxh/nginx:latest    "/docker-entrypoint.…"    21 seconds ago    Up        0.0.0.0:8000->80/tcp    container1
 ```
 
 -d 是指后台运行
@@ -230,9 +225,7 @@ hello lixiaohui
 docker commit container1 nginx:v1
 docker images
 ```
-
 如果用的是containerd，commit方法构建容器镜像的命令就是下面这样的
-
 ```bash
 nerdctl commit container1 nginx:v1
 nerdctl images
@@ -270,7 +263,7 @@ hello lixiaohui
 
 ```bash
 cat > dockerfile <<EOF
-FROM class-docker.myk8s.cn/library/httpd
+FROM registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
 MAINTAINER 939958092@qq.com
 RUN echo hello lixiaohui dockerfile container > /usr/local/apache2/htdocs/index.html
 EXPOSE 80
@@ -284,7 +277,6 @@ docker images
 ```
 
 如果用的是containerd，dockerfile方式构建容器镜像的命令就是下面这样的
-
 ```bash
 nerdctl build  -t httpd:v1 -f dockerfile .
 nerdctl images
@@ -308,7 +300,6 @@ docker build -t httpd:v1 -f dockerfile .
 docker run -d -p 4000:80 --name lixiaohuidockerfile httpd:v1
 docker ps
 ```
-
 如果用的是containerd，dockerfile方式构建容器镜像的使用命令就是下面这样的
 
 ```bash
@@ -334,13 +325,7 @@ hello lixiaohui dockerfile container
 ## 删除容器
 
 ```bash
-docker rm -f container1 lixiaohuidockerfile lixiaohuicommit
-```
-
-或
-
-```bash
-nerdctl rm -f container1 lixiaohuidockerfile lixiaohuicommit
+docker rm -f container1 lixiaohuidockerfile lixiaohuicommit 
 ```
 
 # 构建私有仓库
@@ -356,6 +341,7 @@ openssl genrsa -out /etc/ssl/private/selfsignroot.key 4096
 openssl req -x509 -new -nodes -sha512 -days 3650 -subj "/C=CN/ST=Shanghai/L=Shanghai/O=Company/OU=SH/CN=Root" \
 -key /etc/ssl/private/selfsignroot.key \
 -out /usr/local/share/ca-certificates/selfsignroot.crt
+
 ```
 
 ## 生成服务器私钥以及证书请求文件
@@ -366,6 +352,7 @@ openssl req -sha512 -new \
 -subj "/C=CN/ST=Shanghai/L=Shanghai/O=Company/OU=SH/CN=xiaohui.cn" \
 -key /etc/ssl/private/registry.key \
 -out registry.csr
+
 ```
 
 ## 生成openssl cnf扩展文件
@@ -383,6 +370,7 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = registry.xiaohui.cn
 EOF
+
 ```
 
 ## 签发证书
@@ -393,6 +381,7 @@ openssl x509 -req -in registry.csr \
 -CAkey /etc/ssl/private/selfsignroot.key -CAcreateserial \
 -out /etc/ssl/certs/registry.crt \
 -days 3650 -extensions v3_req -extfile certs.cnf
+
 ```
 
 ## 信任根证书
@@ -423,19 +412,21 @@ echo \
 sudo apt-get update
 
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
 ```
 
 再添加Docker 镜像加速器，这里只限在国内部署时才需要加速，在国外这样加速反而缓慢
 
 ```bash
+
 sudo mkdir -p /etc/docker
 sudo tee /etc/docker/daemon.json <<-'EOF'
 {
   "registry-mirrors": ["https://xxx.xxx.xxx"]
 }
 EOF
-```
 
+```
 添加Compose支持，并启动Docker服务
 
 ```bash
@@ -443,6 +434,7 @@ curl -L "https://class-git.myk8s.cn/docker/compose/releases/download/v2.29.7/doc
 chmod +x /usr/local/bin/docker-compose
 sudo systemctl daemon-reload
 sudo systemctl restart docker
+
 ```
 
 ```bash
@@ -552,21 +544,21 @@ source /etc/bash_completion.d/kubectl
 source /etc/bash_completion.d/kubeadm
 ```
 
-## 集成containerd
-
-```bash
-crictl config runtime-endpoint unix:///run/containerd/containerd.sock
-crictl images
-```
-
-这里请注意，如果你已经安装并打算使用containerd，就不要做下面的集成cri-docker的步骤
-
 ## 集成CRI-Docker
 
 **为了节约网络流量和时间，这一步只在k8s-master这一台机器上完成，后续如需练习worker节点加入到k8s集群的操作，在k8s-master上初始化好k8s集群后，再来其他节点完成这个步骤也来得及**
 
 ```bash
 crictl config runtime-endpoint unix:///run/cri-dockerd.sock
+crictl images
+```
+
+这里请注意，如果你以及安装并打算使用cri-docker，并不要做下面的集成containerd的步骤
+
+## 集成containerd
+
+```bash
+crictl config runtime-endpoint unix:///run/containerd/containerd.sock
 crictl images
 ```
 
@@ -582,7 +574,7 @@ sed -i 's/.*advert.*/  advertiseAddress: 192.168.8.3/g' kubeadm.yaml
 sed -i 's/.*name.*/  name: k8s-master/g' kubeadm.yaml
 sed -i 's/imageRepo.*/imageRepository: class-k8s.myk8s.cn/g' kubeadm.yaml
 # 注意下面的替换，只有在集成的是CRI-Docker时才需要执行，而Containerd就不需要
-# sed -i 's/  criSocket.*/  criSocket: unix:\/\/\/run\/cri-dockerd.sock/' kubeadm.yaml
+sed -i 's/  criSocket.*/  criSocket: unix:\/\/\/run\/cri-dockerd.sock/' kubeadm.yaml
 ```
 
 ```bash
@@ -600,7 +592,6 @@ kubeadm join 192.168.8.3:6443 --token abcdef.0123456789abcdef \
 ```
 
 授权管理权限
-
 ```bash
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
@@ -714,8 +705,8 @@ kubectl get namespaces
 创建带有namespace属性的资源
 
 ```bash
-kubectl run nginx --image=nginx --namespace=lixiaohui
-kubectl get pod -n lixiaohui
+kubectl run nginx --image=registry.cn-shanghai.aliyuncs.com/cnlxh/nginx --namespace=lixiaohui
+kubectl get pod -n lixiaohui 
 ```
 
 每次查询和创建资源都需要带--namespace=lixiaohui挺麻烦，可以设置默认值
@@ -748,7 +739,7 @@ metadata:
 spec:
   containers:
   - name: hello
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     imagePullPolicy: IfNotPresent
     command: ['sh', '-c', 'echo "Hello, lixiaohui!" && sleep 3600']
   restartPolicy: OnFailure
@@ -772,11 +763,11 @@ metadata:
 spec:
   containers:
   - name: hello
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     imagePullPolicy: IfNotPresent
     command: ['sh', '-c', 'echo "Hello, lixiaohui!" && sleep 3600']
   - name: httpd
-    image: httpd
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
     ports:
       - name: web
         containerPort: 80
@@ -833,16 +824,16 @@ metadata:
 spec:
   containers:
   - name: myapp-container
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     imagePullPolicy: IfNotPresent
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   initContainers:
   - name: init-myservice
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     imagePullPolicy: IfNotPresent
     command: ['sh', '-c', "sleep 20"]
   - name: init-mydb
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     imagePullPolicy: IfNotPresent
     command: ['sh', '-c', "sleep 20"]
 EOF
@@ -866,13 +857,13 @@ metadata:
 spec:
   containers:
   - name: httpd
-    image: httpd
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
     imagePullPolicy: IfNotPresent
     volumeMounts:
       - mountPath: /usr/local/apache2/htdocs/
         name: lixiaohuivolume
   - name: busybox
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     imagePullPolicy: IfNotPresent
     command: ['sh', '-c', 'echo "Hello sidecar" > /usr/local/apache2/htdocs/index.html && sleep 3600']
     volumeMounts:
@@ -934,7 +925,7 @@ metadata:
 spec:
   containers:
   - name: hello
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     imagePullPolicy: IfNotPresent
     command: ['sh', '-c', 'echo "Hello, lixiaohui!" && sleep 3600']
   restartPolicy: OnFailure
@@ -996,7 +987,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx
+        image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
         ports:
           - name: http
             containerPort: 80
@@ -1053,7 +1044,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx
+        image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
@@ -1085,7 +1076,7 @@ pod/nginx-deployment-69795dd799-zx9g9   1/1     Running   0          13s
 将deployment的镜像更改一次
 
 ```bash
-kubectl set image deployments/nginx-deployment nginx=nginx:1.16.1 --record
+kubectl set image deployments/nginx-deployment nginx=registry.cn-shanghai.aliyuncs.com/cnlxh/nginx:1.16.1 --record
 
 查看更新进度
 kubectl rollout status deployment/nginx-deployment
@@ -1146,7 +1137,7 @@ kubectl rollout history deployments/nginx-deployment
 deployment.apps/nginx-deployment 
 REVISION  CHANGE-CAUSE
 1         <none>
-2         kubectl set image deployments/nginx-deployment nginx=nginx:1.16.1 --record=true
+2         kubectl set image deployments/nginx-deployment nginx=registry.cn-shanghai.aliyuncs.com/cnlxh/nginx:1.16.1 --record=true
 3         kubectl set image deployments/nginx-deployment nginx=nginx:1.161 --record=true
 ```
 
@@ -1223,7 +1214,7 @@ spec:
     spec:
       containers:
       - name: hello
-        image: busybox
+        image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
         imagePullPolicy: IfNotPresent
         command: ['sh', '-c', 'sleep 3600']
 EOF
@@ -1266,7 +1257,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx
+        image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
@@ -1331,7 +1322,7 @@ spec:
     spec:
       containers:
       - name: pi
-        image: busybox
+        image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
         imagePullPolicy: IfNotPresent
         command: ["sh",  "-c", "while true;do echo CKA JOB;done"]
       restartPolicy: Never
@@ -1360,6 +1351,7 @@ kubectl logs pi-66qbm
 CKA JOB
 CKA JOB
 CKA JOB
+
 ```
 
 ```bash
@@ -1384,7 +1376,7 @@ spec:
         spec:
           containers:
           - name: hello
-            image: busybox
+            image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
             imagePullPolicy: IfNotPresent
             command:
             - /bin/sh
@@ -1444,7 +1436,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx
+        image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
@@ -1603,7 +1595,7 @@ headless   ClusterIP   None         <none>        8000/TCP   4s
 ```
 
 ```bash
-kubectl run --rm --image=busybox:1.28 -it testpod
+kubectl run --rm --image=registry.cn-shanghai.aliyuncs.com/cnlxh/busybox:1.28 -it testpod
 ```
 
 ```bash
@@ -1634,7 +1626,7 @@ kubectl delete deployments.apps nginx-deployment-servicetest
 2. `Speaker`负责将服务的 IP 地址通过标准的路由协议广播到网络中，确保外部流量能够正确路由到集群中的服务。
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.8/config/manifests/metallb-native.yaml
+kubectl apply -f https://gitee.com/cnlxh/Kubernetes/raw/master/cka-yaml/metallb-native.yaml
 ```
 
 定义一组由负载均衡对外分配的IP地址范围
@@ -1670,7 +1662,6 @@ spec:
   - lxh-ip-pool-192-168-8-10-100
 EOF
 ```
-
 ```bash
 kubectl apply -f l2Advertisement.yml
 ```
@@ -1729,12 +1720,14 @@ curl 192.168.8.10
 kubectl delete -f loadbalancer.yml
 ```
 
+
 ## Ingress
 
 Ingress 需要Ingress控制器支持，先部署控制器
 
 ```bash
 kubectl apply -f https://gitee.com/cnlxh/Kubernetes/raw/master/cka-yaml/ingressdeploy.yaml
+
 ```
 
 ```bash
@@ -1772,7 +1765,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx
+        image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
@@ -1879,7 +1872,6 @@ Gateway API 包括几个核心组件：
 **部署 Gateway API CRD**
 
 这一步用于扩展K8S功能，以便于支持Gateway API
-
 ```bash
 kubectl kustomize "https://gitee.com/cnlxh/gateway-api/config/crd?ref=v1.1.0" | kubectl apply -f -
 ```
@@ -1893,12 +1885,13 @@ wget https://class-git.myk8s.cn/istio/istio/releases/download/1.23.2/istioctl-1.
 tar xf istioctl-1.23.2-linux-amd64.tar.gz -C /usr/local/bin
 ```
 
-resources的部分是因为我们的机器没那么高性能，将内存请求由2Gi改成了1Gi
+下方的镜像set操作，是因为在中国无法访问镜像才需要做，如果可以访问国外镜像，这一步就不用，而resources的部分是因为我们的机器没那么高性能，将内存请求由2Gi改成了1Gi
 
 ```bash
 kubectl create namespace istio-system
 istioctl manifest generate --set profile=minimal > minimal.yaml
 kubectl create -f minimal.yaml
+kubectl set image deployment/istiod -n istio-system discovery=registry.cn-shanghai.aliyuncs.com/cnlxh/pilot:1.23.2
 kubectl set resources deployment/istiod -n istio-system --requests=memory=1Gi
 ```
 
@@ -1934,7 +1927,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx
+        image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
@@ -1945,11 +1938,11 @@ EOF
 
 ```bash
 kubectl create -f deployment-service.yml
-kubectl expose deployment k8sgateway-lxhtest --port=9000 --name=gatewayservice --target-port=80
+kubectl expose deployment k8sgateway-lxhtest --port=9000 --name=lxhservice --target-port=80
 ```
 
 1. 创建一个名为lxh-gateway的gateway并关联了一个名为istio的gatewayClass，这个gateway提供了一个监听在80端口的http协议的监听器，这个监听器接收来自任何namespace以lixiaohui.com为后缀的所有请求。
-2. 创建一个名为lxh-http的httpRoute，并关联我们的gateway，本次httpRoute提供了test.lixiaohui.com的域名根目录的请求入口，并将流量导入到一个名为gatewayservice的9000端口
+2. 创建一个名为lxh-http的httpRoute，并关联我们的gateway，本次httpRoute提供了test.lixiaohui.com的域名根目录的请求入口，并将流量导入到一个名为lxhservice的9000端口
 
 ```yaml
 cat > gatewayandhttproute.yml <<-EOF
@@ -1982,7 +1975,7 @@ spec:
         type: PathPrefix
         value: /
     backendRefs:
-    - name: gatewayservice
+    - name: lxhservice
       port: 9000
 EOF
 ```
@@ -1991,6 +1984,7 @@ EOF
 
 ```bash
 kubectl apply -f gatewayandhttproute.yml
+kubectl set image deployment/lxh-gateway-istio istio-proxy=registry.cn-shanghai.aliyuncs.com/cnlxh/proxyv2:1.23.2
 ```
 
 创建了上面的gateway之后，istio会自动创建一个对应的deployment和service用于代理我们的流量
@@ -2000,7 +1994,6 @@ kubectl get deployments.apps
 NAME                           READY   UP-TO-DATE   AVAILABLE   AGE
 lxh-gateway-istio              1/1     1            1           2m49s
 ```
-
 可以看到，我们的gateway，已经从负载均衡中，拿到了外部IP地址
 
 ```bash
@@ -2068,7 +2061,7 @@ metadata:
 spec:
   containers:
   - name: liveness
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     imagePullPolicy: IfNotPresent
     args:
     - /bin/sh
@@ -2144,7 +2137,7 @@ metadata:
 spec:
   containers:
   - name: httpd
-    image: httpd
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
     imagePullPolicy: IfNotPresent
     livenessProbe:
       httpGet:
@@ -2212,7 +2205,7 @@ metadata:
 spec:
   containers:
   - name: httpd
-    image: httpd
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
     imagePullPolicy: IfNotPresent
     ports:
       - name: webport
@@ -2283,7 +2276,7 @@ metadata:
 spec:
   containers:
   - name: httpd
-    image: httpd
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
     imagePullPolicy: IfNotPresent
     ports:
       - name: webport
@@ -2386,7 +2379,7 @@ spec:
   terminationGracePeriodSeconds: 200
   containers:
   - name: httpd
-    image: httpd
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
     imagePullPolicy: IfNotPresent
     ports:
       - name: webport
@@ -2435,7 +2428,7 @@ metadata:
   name: emptydir
 spec:
   containers:
-  - image: httpd
+  - image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
     imagePullPolicy: IfNotPresent
     name: test-container
     volumeMounts:
@@ -2502,7 +2495,7 @@ metadata:
   name: hostpathtest
 spec:
   containers:
-  - image: nginx
+  - image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
     imagePullPolicy: IfNotPresent
     name: hostpathpod
     ports:
@@ -2612,11 +2605,9 @@ Kubernetes 支持两种卷模式（volumeModes）：Filesystem（文件系统）
 | ReadWriteOncePod | 卷可以被单个 Pod 以读写方式挂载。 如果你想确保整个集群中只有一个 Pod 可以读取或写入该 PVC， 请使用ReadWriteOncePod 访问模式。 |
 
 在创建pv前，需要确保在3个节点上都安装了nfs客户端
-
 ```bash
 apt install nfs-common -y
 ```
-
 ```bash
 kubectl create -f pv.yml 
 kubectl get pv
@@ -2699,7 +2690,7 @@ metadata:
 spec:
   containers:
     - name: myfrontend
-      image: httpd
+      image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
       imagePullPolicy: IfNotPresent
       ports:
         - name: web
@@ -2770,7 +2761,6 @@ kubectl create -f deploy/rbac.yaml
 ### 配置NFS外部供应
 
 根据实际情况在deploy/deployment中修改镜像、名称、nfs地址和挂载
-
 ```bash
 kubectl create -f deploy/deployment.yaml
 ```
@@ -2856,6 +2846,7 @@ kubectl label nodes k8s-worker2 name=lixiaohui
 kubectl label nodes k8s-worker2 name-
 ```
 
+
 将pod仅调度到具有name=lixiaohui标签的节点上
 
 ```bash
@@ -2867,7 +2858,7 @@ metadata:
 spec:
   containers:
   - name: nginx
-    image: nginx
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
     imagePullPolicy: IfNotPresent
   nodeSelector:
     name: lixiaohui
@@ -2901,7 +2892,7 @@ metadata:
 spec:
   containers:
   - name: nginx
-    image: nginx
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
     imagePullPolicy: IfNotPresent
   nodeName:
     k8s-worker1
@@ -2929,7 +2920,6 @@ master节点默认不参与调度的原因就是因为其上有taint，而tolera
 ```bash
 kubectl describe nodes k8s-master | grep -i taint
 ```
-
 ```text
 node-role.kubernetes.io/control-plane:NoSchedule
 ```
@@ -2957,7 +2947,7 @@ metadata:
 spec:
   containers:
   - name: nginx
-    image: nginx
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
     imagePullPolicy: IfNotPresent
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
@@ -2987,7 +2977,7 @@ metadata:
 spec:
   containers:
   - name: nginx
-    image: nginx
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
     imagePullPolicy: IfNotPresent
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
@@ -3055,7 +3045,7 @@ spec:
             - ssd            
   containers:
   - name: nginx
-    image: nginx
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
     imagePullPolicy: IfNotPresent
 EOF
 ```
@@ -3067,6 +3057,7 @@ kubectl create -f required.yml
 kubectl get -f required.yml -o wide
 NAME      READY   STATUS    RESTARTS   AGE   IP             NODE          NOMINATED NODE   READINESS GATES
 require   1/1     Running   0          57s   172.16.126.6   k8s-worker2   <none>           <none>
+
 ```
 
 再来试试优先但不强制的调度
@@ -3090,7 +3081,7 @@ spec:
             - ssd          
   containers:
   - name: nginx
-    image: nginx
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
     imagePullPolicy: IfNotPresent
 EOF
 ```
@@ -3240,7 +3231,7 @@ metadata:
 spec:
   containers:
     - name: test
-      image: httpd
+      image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
       imagePullPolicy: IfNotPresent
       volumeMounts:
         - name: index
@@ -3288,7 +3279,7 @@ metadata:
 spec:
   containers:
     - name: mysqlname
-      image: mysql
+      image: registry.cn-shanghai.aliyuncs.com/cnlxh/mysql
       imagePullPolicy: IfNotPresent
       env:
         - name: MYSQL_ROOT_PASSWORD
@@ -3394,7 +3385,7 @@ metadata:
 spec:
   containers:
     - name: mysqlname
-      image: mysql
+      image: registry.cn-shanghai.aliyuncs.com/cnlxh/mysql
       imagePullPolicy: IfNotPresent
       env:
         - name: MYSQL_ROOT_PASSWORD
@@ -3452,7 +3443,7 @@ metadata:
 spec:
   containers:
   - name: app
-    image: nginx
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
     imagePullPolicy: IfNotPresent
     resources:
       requests:
@@ -3492,7 +3483,6 @@ kubectl delete -f quota.yml
 ```bash
 kubectl create namespace test
 ```
-
 在ResourceQuota中，requests.cpu: "1" 就代表1000m，requests.memory后面，如果只是一个数字，没有Mi等单位时，默认使用的是字节单位
 
 ```bash
@@ -3528,7 +3518,7 @@ metadata:
 spec:
   containers:
   - name: app
-    image: nginx
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/nginx
     imagePullPolicy: IfNotPresent
     resources:
       requests:
@@ -3791,7 +3781,7 @@ metadata:
 spec:
   containers:
   - name: httpd
-    image: httpd
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
     ports:
       - name: web
         containerPort: 80
@@ -3823,7 +3813,7 @@ metadata:
 spec:
   containers:
   - name: httpd
-    image: httpd
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/httpd
     ports:
       - name: web
         containerPort: 80
@@ -3880,7 +3870,7 @@ metadata:
 spec:
   containers:
   - name: busybox
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     command:
       - /bin/sh
       - -c
@@ -3912,7 +3902,6 @@ kubectl exec -it pod-default -- wget 172.16.152.73
 ```bash
 Connecting to 172.16.152.73 (172.16.152.73:80)
 ```
-
 新建一个lixiaohui namespace的pod，测试是否可以访问被隔离的pod，由于网络策略的原因，一定是可以访问的
 
 ```bash
@@ -3925,7 +3914,7 @@ metadata:
 spec:
   containers:
   - name: busybox
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     command:
       - /bin/sh
       - -c
@@ -3936,7 +3925,6 @@ kubectl create -f nplixiaohuitest.yml
 ```
 
 以下测试中，发现可以正常访问zhangsan namesapce中的pod
-
 ```bash
 kubectl -n lixiaohui exec -it pod-lixiaohui-test -- wget 172.16.152.73
 ```
@@ -3994,6 +3982,126 @@ kubectl create -f manifests/setup/
 
 ```bash
 kubectl wait --for condition=Established --all CustomResourceDefinition --namespace=monitoring
+```
+
+在master上自动给所有节点准备容器镜像，此处会产生大量网络流量，需要较长时间，请耐心等待
+
+```bash
+cat > dockerimage <<'EOF'
+#!/bin/bash
+
+function sshcmd {
+  sshpass -p vagrant ssh root@$1 $2
+}
+
+echo
+echo Pulling images on $(hostname)
+echo
+
+docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/alertmanager:v0.27.0
+docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/blackbox-exporter:v0.25.0
+docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/configmap-reload:v0.13.1
+docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/kube-rbac-proxy:v0.18.1
+docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/grafana:11.2.0
+docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/kube-state-metrics:v2.13.0
+docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/node-exporter:v1.8.2
+docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/prometheus-adapter:v0.12.0
+docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/prometheus-operator:v0.76.2
+docker pull registry.cn-shanghai.aliyuncs.com/cnlxh/prometheus:v2.54.1
+
+docker tag registry.cn-shanghai.aliyuncs.com/cnlxh/alertmanager:v0.27.0 quay.io/prometheus/alertmanager:v0.27.0
+docker tag registry.cn-shanghai.aliyuncs.com/cnlxh/blackbox-exporter:v0.25.0 quay.io/prometheus/blackbox-exporter:v0.25.0
+docker tag registry.cn-shanghai.aliyuncs.com/cnlxh/configmap-reload:v0.13.1 ghcr.io/jimmidyson/configmap-reload:v0.13.1
+docker tag registry.cn-shanghai.aliyuncs.com/cnlxh/kube-rbac-proxy:v0.18.1 quay.io/brancz/kube-rbac-proxy:v0.18.1
+docker tag registry.cn-shanghai.aliyuncs.com/cnlxh/grafana:11.2.0 grafana/grafana:11.2.0
+docker tag registry.cn-shanghai.aliyuncs.com/cnlxh/kube-state-metrics:v2.13.0 registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
+docker tag registry.cn-shanghai.aliyuncs.com/cnlxh/node-exporter:v1.8.2 quay.io/prometheus/node-exporter:v1.8.2
+docker tag registry.cn-shanghai.aliyuncs.com/cnlxh/prometheus-adapter:v0.12.0 registry.k8s.io/prometheus-adapter/prometheus-adapter:v0.12.0
+docker tag registry.cn-shanghai.aliyuncs.com/cnlxh/prometheus-operator:v0.76.2 quay.io/prometheus-operator/prometheus-operator:v0.76.2
+docker tag registry.cn-shanghai.aliyuncs.com/cnlxh/prometheus:v2.54.1 quay.io/prometheus/prometheus:v2.54.1
+
+docker rmi registry.cn-shanghai.aliyuncs.com/cnlxh/alertmanager:v0.27.0
+docker rmi registry.cn-shanghai.aliyuncs.com/cnlxh/blackbox-exporter:v0.25.0
+docker rmi registry.cn-shanghai.aliyuncs.com/cnlxh/configmap-reload:v0.13.1
+docker rmi registry.cn-shanghai.aliyuncs.com/cnlxh/kube-rbac-proxy:v0.18.1
+docker rmi registry.cn-shanghai.aliyuncs.com/cnlxh/grafana:11.2.0
+docker rmi registry.cn-shanghai.aliyuncs.com/cnlxh/kube-state-metrics:v2.13.0
+docker rmi registry.cn-shanghai.aliyuncs.com/cnlxh/node-exporter:v1.8.2
+docker rmi registry.cn-shanghai.aliyuncs.com/cnlxh/prometheus-adapter:v0.12.0
+docker rmi registry.cn-shanghai.aliyuncs.com/cnlxh/prometheus-operator:v0.76.2
+docker rmi registry.cn-shanghai.aliyuncs.com/cnlxh/prometheus:v2.54.1
+
+echo
+echo Saving images to file
+echo
+
+docker save -o alertmanager.tar quay.io/prometheus/alertmanager:v0.27.0
+docker save -o blackbox-exporter.tar quay.io/prometheus/blackbox-exporter:v0.25.0
+docker save -o configmap-reload.tar ghcr.io/jimmidyson/configmap-reload:v0.13.1
+docker save -o kube-rbac-proxy.tar quay.io/brancz/kube-rbac-proxy:v0.18.1
+docker save -o grafana.tar grafana/grafana:11.2.0
+docker save -o kube-state-metrics.tar registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
+docker save -o node-exporter.tar quay.io/prometheus/node-exporter:v1.8.2
+docker save -o prometheus-adapter.tar registry.k8s.io/prometheus-adapter/prometheus-adapter:v0.12.0
+docker save -o prometheus-operator.tar quay.io/prometheus-operator/prometheus-operator:v0.76.2
+docker save -o prometheus.tar quay.io/prometheus/prometheus:v2.54.1
+
+echo
+echo Copying images file to k8s-worker1 and import it
+echo
+
+scp alertmanager.tar root@k8s-worker1:/root
+scp blackbox-exporter.tar root@k8s-worker1:/root
+scp configmap-reload.tar root@k8s-worker1:/root
+scp kube-rbac-proxy.tar root@k8s-worker1:/root
+scp grafana.tar root@k8s-worker1:/root
+scp kube-state-metrics.tar root@k8s-worker1:/root
+scp node-exporter.tar root@k8s-worker1:/root
+scp prometheus-adapter.tar root@k8s-worker1:/root
+scp prometheus-operator.tar root@k8s-worker1:/root
+scp prometheus.tar root@k8s-worker1:/root
+
+sshcmd k8s-worker1 'docker load -i /root/alertmanager.tar'
+sshcmd k8s-worker1 'docker load -i /root/blackbox-exporter.tar'
+sshcmd k8s-worker1 'docker load -i /root/configmap-reload.tar'
+sshcmd k8s-worker1 'docker load -i /root/kube-rbac-proxy.tar'
+sshcmd k8s-worker1 'docker load -i /root/grafana.tar'
+sshcmd k8s-worker1 'docker load -i /root/kube-state-metrics.tar'
+sshcmd k8s-worker1 'docker load -i /root/node-exporter.tar'
+sshcmd k8s-worker1 'docker load -i /root/prometheus-adapter.tar'
+sshcmd k8s-worker1 'docker load -i /root/prometheus-operator.tar'
+sshcmd k8s-worker1 'docker load -i /root/prometheus.tar'
+
+echo
+echo Copying images file to k8s-worker2 and import it
+echo
+
+scp alertmanager.tar root@k8s-worker2:/root
+scp blackbox-exporter.tar root@k8s-worker2:/root
+scp configmap-reload.tar root@k8s-worker2:/root
+scp kube-rbac-proxy.tar root@k8s-worker2:/root
+scp grafana.tar root@k8s-worker2:/root
+scp kube-state-metrics.tar root@k8s-worker2:/root
+scp node-exporter.tar root@k8s-worker2:/root
+scp prometheus-adapter.tar root@k8s-worker2:/root
+scp prometheus-operator.tar root@k8s-worker2:/root
+scp prometheus.tar root@k8s-worker2:/root
+
+sshcmd k8s-worker2 'docker load -i /root/alertmanager.tar'
+sshcmd k8s-worker2 'docker load -i /root/blackbox-exporter.tar'
+sshcmd k8s-worker2 'docker load -i /root/configmap-reload.tar'
+sshcmd k8s-worker2 'docker load -i /root/kube-rbac-proxy.tar'
+sshcmd k8s-worker2 'docker load -i /root/grafana.tar'
+sshcmd k8s-worker2 'docker load -i /root/kube-state-metrics.tar'
+sshcmd k8s-worker2 'docker load -i /root/node-exporter.tar'
+sshcmd k8s-worker2 'docker load -i /root/prometheus-adapter.tar'
+sshcmd k8s-worker2 'docker load -i /root/prometheus-operator.tar'
+sshcmd k8s-worker2 'docker load -i /root/prometheus.tar'
+
+EOF
+
+bash dockerimage
+
 ```
 
 默认情况下，grafana等各个组件都提供了网络策略，无法被外部访问，我们先删除grafana的策略，并修改它的服务暴露方式为NodePort，因为我们要从外部访问它的图表面板
@@ -4124,6 +4232,7 @@ kubeadm upgrade apply v1.31.1 --etcd-upgrade=false
 [upgrade/successful] SUCCESS! Your cluster was upgraded to "v1.31.1". Enjoy!
 
 [upgrade/kubelet] Now that your control plane is upgraded, please proceed with upgrading your kubelets if you haven't already done so.
+
 ```
 
 恢复Master节点的调度能力
@@ -4153,6 +4262,7 @@ k8s-worker2   Ready    worker          119d   v1.31.0
 wget https://get.helm.sh/helm-v3.16.1-linux-amd64.tar.gz
 tar xf helm-v3.16.1-linux-amd64.tar.gz
 mv linux-amd64/helm /usr/local/bin/helm
+
 ```
 
 默认情况下，helm内置了一个hub，用于软件搜索和安装，搜索软件是否可被安装，用以下格式命令：
@@ -4224,12 +4334,12 @@ pod-default                               0/1     Completed   0          82m    
 wordpress-78d6fd4d6b-jt4pp                1/1     Running     0          107s   172.16.93.201    k8s-worker1   <none>           <none>
 wordpress-mariadb-0                       1/1     Running     0          107s   172.16.245.6     k8s-worker2   <none>           <none>
 ```
-
 可以看到wordpress在k8s-worker1上，直接打开浏览器，访问31194或30386端口都可以，例如:
 
 ```bash
 http://k8s-worker1:31194
 ```
+
 
 用户名：user
 密码需要提取secret
@@ -4240,10 +4350,9 @@ apiVersion: v1
 data:
   wordpress-password: YkRWc21jcmFLbA==
 kind: Secret
+
 ```
-
 我本次的密码是随机字符串：bDVsmcraKl
-
 ```bash
 root@k8s-master:~# echo YkRWc21jcmFLbA== | base64 --decode
 bDVsmcraKl
@@ -4265,9 +4374,7 @@ wget https://gitee.com/cnlxh/Kubernetes/raw/master/files/k8s/kubernetes-dashboar
 ```bash
 helm install lxh-k8s-dash --create-namespace --namespace lxh-k8s-dash /root/kubernetes-dashboard-7.8.0.tgz
 ```
-
 输出
-
 ```text
 NAME: lxh-k8s-dash
 LAST DEPLOYED: Wed Oct 16 11:19:27 2024
@@ -4291,8 +4398,8 @@ NOTE: In case port-forward command does not work, make sure that kong service na
 
 Dashboard will be available at:
   https://localhost:8443
-```
 
+```
 查看pod是否启动
 
 ```bash
@@ -4379,6 +4486,7 @@ kubectl get secret lxh-dash-secret -n lxh-k8s-dash -o jsonpath={".data.token"} |
 
 ![](https://gitee.com/cnlxh/Kubernetes/raw/master/images/k8s/dashboard/dashboard-logined.png)
 
+
 # ETCD 备份与恢复
 
 ## 备份
@@ -4398,6 +4506,7 @@ ETCDCTL_API=3 etcdctl \
 --cert=/etc/kubernetes/pki/etcd/server.crt \
 --key=/etc/kubernetes/pki/etcd/server.key \
 snapshot save etcdbackupfile.db
+
 ```
 
 ## 恢复
@@ -4424,6 +4533,7 @@ snapshot restore etcdbackupfile.db
 ```
 
 ```bash
+
 # 恢复服务
 mv /etc/kubernetes/manifests.bak /etc/kubernetes/manifests
 
@@ -4432,6 +4542,7 @@ systemctl restart kubelet.service
 # 验证数据已经恢复
 
 kubectl get pod
+
 ```
 
 检查etcd是否健康
@@ -4516,7 +4627,6 @@ Kustomize 的工作流程通常包括定义基准和覆盖，然后在覆盖中�
 - 学会如何清理实验中创建的资源，包括 Namespace 和各种 Kubernetes 资源。
 
 ### 实验步骤
-
 #### 准备Base目录
 
 先在base目录中创建一些通用的yaml文件
@@ -4540,7 +4650,6 @@ metadata:
   name: mysqlpass
 EOF
 ```
-
 在base目录中，创建一个Deployment，replicas是3，标签为app: nginx, Deployment文件如下：
 
 ```yaml
@@ -4563,7 +4672,7 @@ spec:
     spec:
       containers:
         - name: mysqlname
-          image: mysql
+          image: registry.cn-shanghai.aliyuncs.com/cnlxh/mysql
           imagePullPolicy: IfNotPresent
           env:
             - name: MYSQL_ROOT_PASSWORD
@@ -4573,7 +4682,6 @@ spec:
                   key: password
 EOF
 ```
-
 在base目录中，创建一个Service，Service文件如下：
 
 ```yaml
@@ -4715,7 +4823,6 @@ cat > configmap-1.yml <<-EOF
 username=lixiaohui
 EOF
 ```
-
 ```bash
 cat > secret-1.yml <<-EOF
 username=admin
@@ -4783,9 +4890,7 @@ root@k8s-master:~/overlays/development# tree .
 ```bash
 root@k8s-master:~/overlays/development# kubectl kustomize ./
 ```
-
 输出
-
 ```text
 apiVersion: v1
 data:
@@ -4885,7 +4990,7 @@ spec:
             secretKeyRef:
               key: password
               name: mysqlpass
-        image: mysql
+        image: registry.cn-shanghai.aliyuncs.com/cnlxh/mysql
         imagePullPolicy: IfNotPresent
         name: mysqlname
 ```
@@ -4939,5 +5044,4 @@ nginx-deployment-6f86fd678b-wpk49   1/1     Running   0          64s   app=nginx
 nginx-deployment-6f86fd678b-wr94h   1/1     Running   0          64s   app=nginx,dev=release1,env=dev,pod-template-hash=6f86fd678b
 nginx-deployment-6f86fd678b-xxkbw   1/1     Running   0          64s   app=nginx,dev=release1,env=dev,pod-template-hash=6f86fd678b
 ```
-
 
