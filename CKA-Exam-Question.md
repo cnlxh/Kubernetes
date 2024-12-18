@@ -737,13 +737,13 @@ root@k8s-master:~# cat /opt/kusc00402.txt
 
 # Q11: Create multi container in pod
 
-Create a pod named kucc1 with a single app container for each of the following images running inside(there may be between 1 and 4 images specified): nginx+redis+memcached+httpd.
+Create a pod named kucc1 with a single app container for each of the following images running inside(there may be between 1 and 4 images specified): nginx+redis+memcached+registry.
 
 ---
 
 Q11 中文题目：
 
-创建一个Pod，名字为kucc1，这个Pod可能包含1-4容器，该题为四个：nginx+redis+memcached+httpd
+创建一个Pod，名字为kucc1，这个Pod可能包含1-4容器，该题为四个：nginx+redis+memcached+registry
 
 参考链接： [pod](https://kubernetes.io/zh-cn/docs/concepts/workloads/pods/#using-pods)
 
