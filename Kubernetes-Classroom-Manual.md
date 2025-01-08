@@ -15,7 +15,7 @@
 在<mark>直播上课期间</mark>，我提供了免费的Docker和K8S的镜像加速器以及Docker和K8S软件仓库加速器，需要注意的是，加速器地址可能会受到不可抗力经常变更网址，请需要时，打开以下链接查看最新地址即可
 
 ```text
-https://gitee.com/cnlxh/Kubernetes/blob/master/Docker-Images-Mirror.md
+https://www.credclouds.com/k8s/free-image-or-proxy
 ```
 
 # 准备DNS解析
@@ -603,7 +603,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 **这个Calico网络插件部署的操作只能在k8s-master上执行**
 
 ```bash
-kubectl create -f https://class-git.myk8s.cn/cnlxh/Kubernetes/raw/refs/heads/master/cka-yaml/calico.yaml
+kubectl create -f https://class-git-raw.myk8s.cn/cnlxh/Kubernetes/refs/heads/master/cka-yaml/calico.yaml
 ```
 
 查询集群组件是否工作正常，正常应该都处于running
