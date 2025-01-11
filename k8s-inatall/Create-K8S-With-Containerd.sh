@@ -344,7 +344,7 @@ cat > create-k8s.yaml <<'EOF'
       when: "'master' in group_names"
     - name: Deploy Network Plugins
       shell: |
-        kubectl create -f https://class-git.myk8s.cn/cnlxh/Kubernetes/raw/refs/heads/master/cka-yaml/calico.yaml
+        kubectl create -f https://class-git.myk8s.cn/cnlxh/Kubernetes/raw/master/cka-yaml/calico.yaml
       register: result
       until: result.rc == 0
       retries: 5
