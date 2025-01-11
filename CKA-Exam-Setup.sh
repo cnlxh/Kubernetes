@@ -259,7 +259,7 @@ spec:
     spec:
       containers:
         - name: foobar
-          image: busybox
+          image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
           command:
             - /bin/sh
             - -c
@@ -284,7 +284,7 @@ metadata:
 spec:
   containers:
   - name: legacy
-    image: busybox
+    image: registry.cn-shanghai.aliyuncs.com/cnlxh/busybox
     args:
     - /bin/sh
     - -c
