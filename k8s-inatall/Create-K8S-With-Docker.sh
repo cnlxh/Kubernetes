@@ -344,7 +344,7 @@ cat > create-k8s.yaml <<'EOF'
         line: '\1imageRepository: registry.cn-hangzhou.aliyuncs.com/google_containers'
         backrefs: yes
       when: "'master' in group_names"
-    - name: Modify criSocket to containerd
+    - name: Modify criSocket to cri-dockerd
       lineinfile:
         path: kubeadm.yaml
         regexp: '(^\s*)criSocket.*'
