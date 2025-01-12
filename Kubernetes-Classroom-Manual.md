@@ -3967,6 +3967,159 @@ lixiaohui-qjlwt                    0m           0Mi
 lixiaohui-sm6pp                    0m           0Mi             
 ```
 
+## HPA 自动扩容
+
+在部署了`metrics server`后，可以给HPA提供自动扩容的资源用量指标，帮助HPA快速识别用量，并完成自动扩容
+
+先创建一个deployment以及上层的访问service
+
+```yaml
+cat > hpatest.yml <<-EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-apache
+spec:
+  selector:
+    matchLabels:
+      run: php-apache
+  template:
+    metadata:
+      labels:
+        run: php-apache
+    spec:
+      containers:
+      - name: php-apache
+        image: class-k8s.myk8s.cn/hpa-example
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 500m
+          requests:
+            cpu: 200m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-apache
+  labels:
+    run: php-apache
+spec:
+  ports:
+  - port: 80
+  selector:
+    run: php-apache
+EOF
+```
+
+根据以上代码，deployment创建了一个pod副本，service提供了一个名为php-apache的访问点
+
+创建后，来测试一下pod和service本身是否可以访问
+
+```bash
+kubectl create -f hpatest.yml
+```
+
+```bash
+kubectl get deployments.apps
+```
+输出
+```text
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+php-apache   7/7     7            7           52m
+```
+输出
+```bash
+kubectl get service
+```
+输出
+```text
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP   25d
+php-apache   ClusterIP   10.110.249.4   <none>        80/TCP    53m
+```
+输出
+```bash
+kubectl get pod -o wide
+```
+输出
+```text
+NAME                          READY   STATUS    RESTARTS   AGE   IP              NODE          NOMINATED NODE   READINESS GATES
+php-apache-5db7b77785-6j9lj   1/1     Running   0          53m   172.16.194.66   k8s-worker1   <none>           <none>
+```
+输出
+```bash
+curl 172.16.194.66
+OK!
+```
+输出
+```bash
+curl 10.110.249.4
+```
+输出
+```text
+OK!
+```
+
+经过测试，pod和service都可以访问，现在来做一个CPU利用率大于50，就扩容的例子
+
+```bash
+kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=10
+```
+
+稍等一分钟，执行以下命令查看实时CPU利用率和目标的差距，并观察副本数
+
+```bash
+kubectl get hpa
+```
+输出
+```text
+NAME         REFERENCE               TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+php-apache   Deployment/php-apache   cpu: 0%/50%   1         10        1          31s
+```
+
+启动一个不同的 Pod 作为客户端。 客户端 Pod 中的容器在无限循环中运行，向 php-apache 服务发送查询。
+
+不断的访问，将产生压力，压力大了，hpa就会扩容
+
+需要注意的是，如果镜像不可用，你需要换成其他的busybox镜像
+
+```bash
+kubectl run -i --tty load-generator --rm --image=busybox:1.28 --restart=Never -- /bin/sh -c "while sleep 0.01; do wget -q -O- http://php-apache; done"
+```
+
+运行后会不断的输出ok，`不要结束输出`，开一个新的ssh会话，运行以下命令，观察hpa收集到的信息以及pod的扩容情况
+
+```bash
+kubectl get hpa php-apache --watch
+```
+输出
+```
+NAME         REFERENCE               TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+php-apache   Deployment/php-apache   cpu: 231%/50%   1         10        1          10m
+php-apache   Deployment/php-apache   cpu: 250%/50%   1         10        4          10m
+```
+
+此时按下`CTRL C结束`ok的输出，再次观察target的利用率下降
+
+```bash
+kubectl get hpa php-apache --watch
+```
+输出
+```text
+NAME         REFERENCE               TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+php-apache   Deployment/php-apache   cpu: 231%/50%   1         10        1          10m
+php-apache   Deployment/php-apache   cpu: 250%/50%   1         10        4          10m
+php-apache   Deployment/php-apache   cpu: 144%/50%   1         10        5          10m
+php-apache   Deployment/php-apache   cpu: 72%/50%    1         10        5          11m
+php-apache   Deployment/php-apache   cpu: 68%/50%    1         10        5          11m
+php-apache   Deployment/php-apache   cpu: 67%/50%    1         10        7          11m
+php-apache   Deployment/php-apache   cpu: 30%/50%    1         10        7          11m
+php-apache   Deployment/php-apache   cpu: 0%/50%     1         10        7          12m
+```
+
+
 ## 部署Prometheus
 
 手工部署较为复杂，我们采用operator进行部署，先克隆它的operator，本次采用的是0.14.0版本
