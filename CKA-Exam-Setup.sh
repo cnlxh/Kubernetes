@@ -368,7 +368,7 @@ if [ $? -eq 0 ];then
     echo
   else
     echo
-	  echo -e "\033[1;31;5mLogin Failed, You can ignore that if you doesn't have mirror address or your mirror address does not support login\033[0m"
+	  echo -e "\033[1;31;5mLogin Failed, You can ignore that if you don't have mirror address or your mirror address does not support login\033[0m"
     echo
     sleep 5
 fi
