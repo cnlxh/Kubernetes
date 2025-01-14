@@ -344,12 +344,23 @@ read -p "Please input your Docker Hub username: " dockerhub_username
 echo
 
 read -sp "Please input your Docker Hub password: " dockerhub_password
-
 echo
+cat > /etc/docker/daemon.json <<-EOF
+{
+  "registry-mirrors": ["https://$dockerhub_mirror"],
+  "exec-opts": ["native.cgroupdriver=systemd"]
+}
+EOF
 echo
 echo 'Now login your mirror address with your password'
 
-docker login $dockerhub_mirror -u $dockerhub_username -p $dockerhub_password &> /dev/null
+for host in k8s-master k8s-worker1 k8s-worker2;do
+    scp /etc/docker/daemon.json root@$host:/etc/docker/daemon.json &> /dev/null
+    ssh root@$host "systemctl restart docker cri-docker" &> /dev/null
+    sleep 5
+    ssh root@$host "docker login $dockerhub_mirror -u $dockerhub_username -p $dockerhub_password" &> /dev/null
+done
+
 
 if [ $? -eq 0 ];then
     echo
@@ -357,9 +368,9 @@ if [ $? -eq 0 ];then
     echo
   else
     echo
-	  echo echo -e "\033[1;31;5mLogin Failed, You can ignore that if your mirror address does not support login\033[0m"
+	  echo -e "\033[1;31;5mLogin Failed, You can ignore that if you doesn't have mirror address or your mirror address does not support login\033[0m"
     echo
-    sleep 10
+    sleep 5
 fi
 
 rbac
